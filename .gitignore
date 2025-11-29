@@ -73,3 +73,10 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+<<<<<<< HEAD
+=======
+
+# Vite logs files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+>>>>>>> 789b12b9dbc1f1e76b75bbb9a3de6a48b66de777
