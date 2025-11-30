@@ -146,6 +146,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 46,
     width: '88%',
+    borderWidth: 1,
+    borderColor: 'rgba(112,164,248,0.8)',
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 3 },
