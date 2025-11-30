@@ -6,6 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import FirstScreen from '../screens/FirstScreen';
 import Login from '../screens/Login';
 import AuthGate from '../screens/AuthGate';
+import Reservation from '../screens/Reservation';
 
 import MainTabNavigator from './MainTabNavigator';
 
@@ -14,6 +15,7 @@ export type RootStackParamList = {
   Login: undefined;
   AuthGate: undefined;
   MainTabs: undefined; // 탭 네비게이터
+  Reservation: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,6 +34,7 @@ const RootNavigator = () => {
 
         {/* 메인 페이지 = 탭 네비게이터 */}
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        <Stack.Screen name="Reservation" component={Reservation} />
         
       </Stack.Navigator>
     </NavigationContainer>

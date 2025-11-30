@@ -7,7 +7,18 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  TextInput,
 } from 'react-native';
+import api from '../../api/axios'
+import { useNavigation } from '@react-navigation/native';
+
+type Hospital = {
+  hospitalId: string;
+  name: string;
+  address: string;
+  categories: string[];
+  isFavorite: boolean;
+};
 
 type Dept = {
   id: string;
@@ -31,9 +42,39 @@ const DEPARTMENTS: Dept[] = [
 
 const Hospital_List: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
+  const navigation = useNavigation<any>();
+
+  const [searchText, setSearchText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // 접혀 있을 때는 앞부분만 보여주고, 펼치면 전체 + 스크롤
   const visibleData = expanded ? DEPARTMENTS : DEPARTMENTS.slice(0, 8);
+
+
+  const fetchHospitals = async () => {
+    try {
+      const res = await api.get('api/v1/hospitals', {
+        params: {
+          search: searchText || undefined,
+          category: selectedCategory || undefined,
+          page,
+          size: PAGE_SIZE,
+        },
+      });
+
+      console.log("병원목록",res.data)
+  
+      // 응답 예시 기준: res.data.data.hospitals
+      setHospitals(res.data.data.hospitals);
+    } catch (e) {
+      console.log('병원 목록 조회 실패', e);
+    }
+  };
+  
 
   return (
     <View style={styles.sectionContainer}>
@@ -47,8 +88,21 @@ const Hospital_List: React.FC = () => {
           source={require('../../assets/icons/search.png')}
           style={styles.searchIcon}
         />
-        <Text style={styles.searchPlaceholder}>병원 이름을 검색해주세요</Text>
-      </View>
+        <TextInput
+          style={{ flex: 1, fontSize: 14 }}
+          placeholder="병원 이름을 검색해주세요"
+          placeholderTextColor="rgba(0,0,0,0.5)"
+          value={searchText}
+          onChangeText={setSearchText}
+          returnKeyType="search"
+          onSubmitEditing={() => {
+            //setPage(1);
+            //fetchHospitals();
+            navigation.navigate('Reservation');
+          }}
+        />
+     </View>
+
 
       {/* 진료과 그리드 영역 (이 안만 스크롤) */}
       <View style={styles.gridWrapper}>
@@ -60,10 +114,17 @@ const Hospital_List: React.FC = () => {
           nestedScrollEnabled               // 바깥 ScrollView 안에서도 이 부분만 스크롤
           contentContainerStyle={styles.gridContent}
           renderItem={({ item }) => (
-            <View style={styles.deptItem}>
+            <TouchableOpacity
+              style={styles.deptItem}
+              onPress={() => {
+                // 나중에 여기서 category로 필터해서 넘겨줄 수도 있음
+                navigation.navigate('Reservation');
+              }}
+              activeOpacity={0.8}
+            >
               <View style={styles.deptIconBox} />
               <Text style={styles.deptLabel}>{item.name}</Text>
-            </View>
+            </TouchableOpacity>
           )}
           // 펼쳐진 상태에서 리스트 맨 아래에 나오는 "진료과 접기"
           ListFooterComponent={
