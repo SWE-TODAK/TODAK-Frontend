@@ -4,6 +4,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // 실제 화면들
 import MainScreen from '../screens/MainScreen';
+import Health from '../screens/Health';
+import Mycare from '../screens/Mycare'
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
 
@@ -18,7 +20,7 @@ const DummyScreen = ({ label }: { label: string }) => (
 const MainTabNavigator = () => {
   return (
     <Tab.Navigator
-  screenOptions={({ route }) => ({
+    screenOptions={({ route }) => ({
     headerShown: false,
     tabBarShowLabel: true,
     tabBarLabelStyle: { fontSize: 11 },
@@ -95,12 +97,12 @@ const MainTabNavigator = () => {
   />
   <Tab.Screen
     name="Health"
-    children={() => <DummyScreen label="건강관리" />}
+    component={Health}
     options={{ tabBarLabel: '건강관리' }}
   />
   <Tab.Screen
     name="MyCare"
-    children={() => <DummyScreen label="내 진료" />}
+    component={Mycare}
     options={{ tabBarLabel: '내 진료' }}
   />
   <Tab.Screen
