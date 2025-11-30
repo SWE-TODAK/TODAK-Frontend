@@ -8,9 +8,7 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import HealthMetricTabs, {
-  HealthMetricType,
-} from '../components/Health/HealthMetricTabs';
+
 
 const Health: React.FC = () => {
   const insets = useSafeAreaInsets();

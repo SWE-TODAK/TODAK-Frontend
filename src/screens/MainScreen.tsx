@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Today_Reservation from '../components/Home/Today_Reservation';
 import Hospital_List from '../components/Home/Hospital_List';
 
+
+
 const MainScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
@@ -21,9 +23,6 @@ const MainScreen: React.FC = () => {
         timeText="8:00 AM"
         hospitalName="바른이치과의원"
         department="치과"
-        onPressRecord={() => {
-          // 나중에 녹음 화면 네비게이션 연결
-        }}
       />
       <Hospital_List />
     </SafeAreaView>

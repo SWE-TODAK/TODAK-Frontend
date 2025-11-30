@@ -8,14 +8,21 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { MainTabParamList } from '../navigation/MainTabNavigator';
+
+type HealthScreenNavProp = BottomTabNavigationProp<MainTabParamList, 'Health'>;
+
 
 import HealthMetricTabs, {
   HealthMetricType,
 } from '../components/Health/HealthMetricTabs';
 import HealthMetricSection from '../components/Health/HealthMetricSection';
 import HealthMetricComment from '../components/Health/HealthMetricComment';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 const Health: React.FC = () => {
+  const navigation = useNavigation<HealthScreenNavProp>(); 
   const insets = useSafeAreaInsets();
   const [selectedMetric, setSelectedMetric] =
     useState<HealthMetricType>('bloodPressure');
@@ -52,12 +59,15 @@ const Health: React.FC = () => {
 
       {/* 🔹 상단 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
-          <Image
-            source={require('../assets/icons/back.png')}
-            style={styles.backIcon}
-          />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate('Home')}   // ← 메인(Home)으로 이동
+      >
+        <Image
+          source={require('../assets/icons/back.png')}
+          style={styles.backIcon}
+        />
+      </TouchableOpacity>
 
         <Text style={styles.headerTitle}>건강지표 통계</Text>
 

@@ -9,7 +9,15 @@ import Mycare from '../screens/Mycare'
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
 
-const Tab = createBottomTabNavigator();
+export type MainTabParamList = {
+  Home: undefined;
+  Calendar: undefined;
+  Health: undefined;
+  MyCare: undefined;
+  Setting: undefined;
+};
+
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const DummyScreen = ({ label }: { label: string }) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

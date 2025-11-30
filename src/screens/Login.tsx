@@ -15,6 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../api/axios'
+
 import LoginIntro1 from '../components/Login/LoginIntro1'
 import LoginIntro2 from '../components/Login/LoginIntro2'
 import LoginIntro3 from '../components/Login/LoginIntro3'
@@ -57,15 +59,12 @@ const Login: React.FC = () => {
   
       const code = loginResult.code;
   
-      // 2) 서버에 code 보내서 우리 서비스 토큰 받기
-      const response = await fetch("http://서버주소/kakao/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-  
-      const data = await response.json();
+      const response = await api.post('/kakao/login', { code });
+      const data = response.data;
+      console.log("카카오 인가코드:",data)
+
       const token = data.accessToken;  // 서버가 준 우리 서비스 토큰
+      console.log("카카오 인가코드:",token)
   
       // 3) 토큰 저장
       await saveAccessToken(token);
