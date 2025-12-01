@@ -1,4 +1,4 @@
-// Login.tsx
+// src/screens/Login.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -15,14 +15,15 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api from '../api/axios'
 
-import LoginIntro1 from '../components/Login/LoginIntro1'
-import LoginIntro2 from '../components/Login/LoginIntro2'
-import LoginIntro3 from '../components/Login/LoginIntro3'
+// ✅ api / saveAccessToken 는 이제 여기서 안 씀
+// import api from '../api/axios'
+
+import LoginIntro1 from '../components/Login/LoginIntro1';
+import LoginIntro2 from '../components/Login/LoginIntro2';
+import LoginIntro3 from '../components/Login/LoginIntro3';
 import { startKakaoLogin } from '../utils/kakaoAuth';
-import { saveAccessToken } from '../utils/authStorage';
-
+// import { saveAccessToken } from '../utils/authStorage';
 
 type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -34,8 +35,8 @@ const Login: React.FC = () => {
   const scrollRef = useRef<ScrollView | null>(null);
   const currentIndexRef = useRef(0); // 실제 현재 인덱스 저장
 
-   // 🔁 자동 슬라이드: interval은 딱 한 번만 생성
-   useEffect(() => {
+  // 🔁 자동 슬라이드: interval은 딱 한 번만 생성
+  useEffect(() => {
     const interval = setInterval(() => {
       const nextIndex = (currentIndexRef.current + 1) % TOTAL_PAGES;
       currentIndexRef.current = nextIndex;
@@ -53,27 +54,17 @@ const Login: React.FC = () => {
 
   const handleKakaoLogin = async () => {
     try {
-      // 1) 카카오 로그인 진행 (code 받아옴)
-      const loginResult = await startKakaoLogin(); 
-      // loginResult 안에 code가 담겨 있다고 가정
+      console.log('🟡 [Login] 카카오 로그인 플로우 시작');
+      const kakaoTokenRes = await startKakaoLogin();
+      console.log('🟢 [Login] 카카오 토큰 응답:', kakaoTokenRes);
   
-      const code = loginResult.code;
+      const kakaoAccessToken = kakaoTokenRes.access_token;
+      console.log('🟢 [Login] 카카오 access_token:', kakaoAccessToken);
   
-      const response = await api.post('/kakao/login', { code });
-      const data = response.data;
-      console.log("카카오 인가코드:",data)
-
-      const token = data.accessToken;  // 서버가 준 우리 서비스 토큰
-      console.log("카카오 인가코드:",token)
-  
-      // 3) 토큰 저장
-      await saveAccessToken(token);
-  
-      // 4) MainScreen으로 이동
-      navigation.replace("MainTabs");
-  
+      // 여기서 kakaoAccessToken을 백엔드에 보내서
+      // 우리 서비스용 accessToken/refreshToken 받으면 됨.
     } catch (err) {
-      console.log("카카오 로그인 오류:", err);
+      console.log('🔴 [Login] 카카오 로그인 전체 오류:', err);
     }
   };
 
@@ -87,6 +78,7 @@ const Login: React.FC = () => {
     currentIndexRef.current = newIndex;
     setActiveIndex(newIndex);
   };
+
   const renderDots = () => (
     <View style={styles.dotsContainer}>
       {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
@@ -125,17 +117,16 @@ const Login: React.FC = () => {
         </ScrollView>
       </View>
 
-
       <View style={styles.bottomArea}>
         {renderDots()}
 
         <TouchableOpacity
           style={styles.kakaoButton}
           activeOpacity={0.8}
-          onPress={handleKakaoLogin}   
+          onPress={handleKakaoLogin}
         >
-          <Image 
-            source={require('../assets/icons/kakao_login_large_wide.png')}  
+          <Image
+            source={require('../assets/icons/kakao_login_large_wide.png')}
             style={styles.kakaoImage}
             resizeMode="contain"
           />
@@ -143,7 +134,7 @@ const Login: React.FC = () => {
 
         <TouchableOpacity
           onPress={() => {
-            navigation.replace("MainTabs");
+            navigation.replace('MainTabs');
           }}
         >
           <Text style={styles.adminLoginText}>병원 관리자 로그인</Text>
