@@ -10,15 +10,38 @@ import {
   StyleSheet,
   Alert,
   Animated,
+  PermissionsAndroid,   // ✅ 추가
+  Platform,
 } from 'react-native';
+
+import RNFS from 'react-native-fs';
+import AudioRecord from 'react-native-audio-record';
+import axios from '../../api/axios';
+
 
 const Hospital_Record = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
   const [code, setCode] = useState('');
 
-  // 🔵 Pulse 애니메이션 값
   const scale = useRef(new Animated.Value(1)).current;
+
+  const [lastRecordPath, setLastRecordPath] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // 🎙 마이크 권한 요청
+  const requestMicPermission = async () => {
+    if (Platform.OS === 'android') {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      );
+
+      return result === PermissionsAndroid.RESULTS.GRANTED;
+    }
+
+    // 지금은 안드로이드만 쓸 예정이라도, 나중 대비용
+    return true;
+  };
 
   useEffect(() => {
     if (isRecording) {
@@ -44,34 +67,85 @@ const Hospital_Record = () => {
     }
   }, [isRecording]);
 
-  const handlePressRecord = () => {
+  
+  const handlePressRecord = async () => {
     if (isRecording) {
-      handleStopRecording();
+      await handleStopRecording();
     } else {
       setShowConsent(true);
     }
   };
+  
 
   const handleConfirmConsent = async () => {
     const ok = await fakeVerifyCode(code);
-
+  
     if (!ok) {
       Alert.alert('인증 실패', '동의 코드를 다시 확인해주세요.');
       return;
     }
-
+  
     setShowConsent(false);
-    setIsRecording(true);
-    startRecording();
+    setCode('');
+  
+    // 🔹 실제 녹음 시작 시도
+    const started = await startRecording();
+    if (started) {
+      setIsRecording(true);
+    } else {
+      setIsRecording(false);
+    }
   };
+  
 
-  const handleStopRecording = () => {
+  const handleStopRecording = async () => {
+    await stopRecording();
     setIsRecording(false);
-    stopRecording();
   };
 
-  const startRecording = () => console.log('녹음 시작');
-  const stopRecording = () => console.log('녹음 종료');
+  // 🎙 실제 녹음 시작 (AudioRecord 사용)
+  const startRecording = async (): Promise<boolean> => {
+    const hasPermission = await requestMicPermission();
+    if (!hasPermission) {
+      Alert.alert('권한 필요', '마이크 사용 권한을 허용해주세요.');
+      return false;
+    }
+
+    try {
+      // 🔧 여기서 바로 초기화
+      AudioRecord.init({
+        sampleRate: 44100,      // 샘플링 레이트
+        channels: 1,            // 모노
+        bitsPerSample: 16,      // 16비트
+        audioSource: 6,         // 안드로이드 MIC 소스
+        wavFile: 'todak_record.wav',  // 저장될 파일 이름
+      });
+
+      // 그리고 녹음 시작
+      await AudioRecord.start();
+      console.log('녹음 시작');
+      return true;
+    } catch (e) {
+      console.log('startRecording error:', e);
+      Alert.alert('오류', '녹음을 시작할 수 없습니다.');
+      return false;
+    }
+  };
+
+
+  // 🎙 녹음 종료 (AudioRecord 사용)
+const stopRecording = async () => {
+  try {
+    const audioFilePath = await AudioRecord.stop(); // 여기서 wav 파일 경로를 돌려줌
+    console.log('녹음 종료, path:', audioFilePath);
+    setLastRecordPath(audioFilePath);
+  } catch (e) {
+    console.log('stopRecording error:', e);
+    Alert.alert('오류', '녹음을 종료하는 중 문제가 발생했습니다.');
+  }
+};
+
+
   const fakeVerifyCode = async (value: string) => value === '1234';
 
   return (

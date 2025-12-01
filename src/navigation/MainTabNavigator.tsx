@@ -6,6 +6,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MainScreen from '../screens/MainScreen';
 import Health from '../screens/Health';
 import Mycare from '../screens/Mycare'
+import Calendar from '../screens/Calendar'
+import Setting from '../screens/Setting';
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
 
@@ -18,12 +20,6 @@ export type MainTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-const DummyScreen = ({ label }: { label: string }) => (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-    <Text>{label}</Text>
-  </View>
-);
 
 const MainTabNavigator = () => {
   return (
@@ -100,7 +96,7 @@ const MainTabNavigator = () => {
   />
   <Tab.Screen
     name="Calendar"
-    children={() => <DummyScreen label="캘린더" />}
+    component={Calendar}
     options={{ tabBarLabel: '캘린더' }}
   />
   <Tab.Screen
@@ -115,7 +111,7 @@ const MainTabNavigator = () => {
   />
   <Tab.Screen
     name="Setting"
-    children={() => <DummyScreen label="더보기" />}
+    component={Setting}
     options={{ tabBarLabel: '더보기' }}
   />
 </Tab.Navigator>
