@@ -1,5 +1,5 @@
 // src/screens/Reservation.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,61 +9,256 @@ import {
   TextInput,
   FlatList,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Record_Window from '../components//Home/Record/Record_Window';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import Record_Window, {
+  Doctor,
+} from '../components/Home/Record/Record_Window';
+import axios, { AxiosError } from 'axios';
+
+// 네비게이션으로 넘어오는 파라미터 타입
+type ReservationRouteParams = {
+  categoryId?: number;
+  categoryName?: string;
+  categories?: string[];
+  searchText?: string;
+};
+
+type ReservationRouteProp = RouteProp<
+  { Reservation: ReservationRouteParams },
+  'Reservation'
+>;
+
+// /hospitals 리스트 응답
+type HospitalApi = {
+  hospitalId: number;
+  name: string;
+  address: string;
+  categories: string[];
+  favorite: boolean;
+};
+
+// /hospitals/{id} 상세 응답
+type HospitalDetailApi = {
+  hospitalId: number;
+  name: string;
+  address: string;
+  phone: string;
+  introduction: string;
+  categories: string[];
+  favorite: boolean;
+  doctors: {
+    doctorId: number;
+    name: string;
+    specialty: string;
+    mainDepartmentId: number;
+  }[];
+  availableHours: {
+    mon: string;
+    tue: string;
+    wed: string;
+    thu: string;
+    fri: string;
+    sat: string;
+    sun: string;
+  };
+};
 
 type Hospital = {
   id: string;
   name: string;
-  categories: string[]; // 진료과
+  categories: string[];
   address: string;
   openTime: string;
   closeTime: string;
+  favorite: boolean;
 };
 
-const CATEGORIES = ['소아과', '내과', '치과', '정형외과', '안과', '산부인과'];
-
-const DUMMY_HOSPITALS: Hospital[] = [
-  {
-    id: '1',
-    name: '한승룡 소아 청소년과 의원',
-    categories: ['소아과'],
-    address: '서울 중구 서애로1길',
-    openTime: '8:00',
-    closeTime: '19:00',
-  },
-  {
-    id: '2',
-    name: '한빛 소아과',
-    categories: ['소아과'],
-    address: '서울 동대문구 고산자로',
-    openTime: '8:00',
-    closeTime: '18:00',
-  },
-];
+const BACKEND_BASE_URL = 'https://todak-backend-705x.onrender.com';
 
 const Reservation: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<ReservationRouteProp>();
 
-  const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('소아과');
+  const passedCategories = route.params?.categories ?? [];
+  const CATEGORIES =
+    passedCategories.length > 0 ? passedCategories : ['소아청소년과'];
+
+  const initialCategory =
+    route.params?.categoryName && CATEGORIES.includes(route.params.categoryName)
+      ? route.params.categoryName
+      : CATEGORIES[0];
+
+  const initialSearch = route.params?.searchText ?? '';
+
+  const [searchText, setSearchText] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] =
+    useState(initialCategory);
+
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // 모달 관련 상태
   const [recordVisible, setRecordVisible] = useState(false);
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null); //
   const [selectedHospitalName, setSelectedHospitalName] = useState('');
-  const [selectedOpenTime, setSelectedOpenTime] = useState('8:00');   // 초기값은 아무거나
-  const [selectedCloseTime, setSelectedCloseTime] = useState('18:00'); // 클릭할 때 실제 값으로 교체됨
+  const [selectedOpenTime, setSelectedOpenTime] = useState('8:00');
+  const [selectedCloseTime, setSelectedCloseTime] = useState('18:00');
 
+  const [modalDoctors, setModalDoctors] = useState<Doctor[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // 카테고리 + 검색어로 필터 (지금은 더미 데이터)
-  const filteredHospitals = useMemo(() => {
-    return DUMMY_HOSPITALS.filter((h) => {
-      const inCategory = h.categories.includes(selectedCategory);
-      const inSearch =
-        searchText.trim().length === 0 ||
-        h.name.toLowerCase().includes(searchText.toLowerCase());
-      return inCategory && inSearch;
+  // /hospitals 리스트 호출
+const fetchHospitals = async () => {
+  console.log('================ FETCH HOSPITALS START ================');
+  console.log('searchText =', searchText);
+  console.log('selectedCategory =', selectedCategory);
+
+  const finalURL = 'https://todak-backend-705x.onrender.com/hospitals';
+  const finalParams = {
+    search: searchText || undefined,
+    department: selectedCategory || undefined,
+  };
+
+  console.log('REQUEST URL:', finalURL);
+  console.log('REQUEST PARAMS:', finalParams);
+
+  try {
+    setLoading(true);
+    console.log('--- axios GET 실행 ---');
+
+    const res = await axios.get<HospitalApi[]>(finalURL, {
+      params: finalParams,
+      timeout: 8000,
     });
+
+
+    const mapped: Hospital[] = res.data.map((h) => ({
+      id: String(h.hospitalId),
+      name: h.name,
+      address: h.address,
+      categories: h.categories ?? [],
+      favorite: h.favorite,
+      openTime: '08:00',
+      closeTime: '18:00',
+    }));
+
+   // console.log('mapped:', mapped);
+
+    setHospitals(mapped);
+  } catch (err) {
+    console.log('!!!! 병원 목록 조회 실패 raw error:', err);
+
+    // 🔍 AxiosError 라면 상태코드 / 응답 바디도 같이 찍기
+    if (axios.isAxiosError(err)) {
+      console.log('병원 목록 status:', err.response?.status);
+      console.log('병원 목록 data:', err.response?.data);
+    }
+
+    setHospitals([]);
+  } finally {
+    console.log('================ FETCH HOSPITALS END ================\n');
+    setLoading(false);
+  }
+};
+
+  // 카테고리 / 검색어 변경 시 리스트 다시 호출
+  useEffect(() => {
+    fetchHospitals();
   }, [selectedCategory, searchText]);
+
+   // 🔹 "09:00-18:00" 같은 문자열 → { open: "09:00", close: "18:00" }
+// 🔹 "09:00-18:00" 같은 문자열 → { open: "09:00", close: "18:00" }
+const parseHoursFromString = (raw?: string | null) => {
+  console.log('🧪 [parseHoursFromString] raw =', raw);
+
+  if (!raw || raw === 'closed') {
+    return null;
+  }
+
+  const match = raw.match(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/);
+
+  console.log('🧪 정규식 match 결과 =', match);
+
+  if (!match) {
+    return null;
+  }
+
+  const open = match[1]; // 그대로 쓰기 (추가로 "0" 붙이지 않기!)
+  const close = match[2];
+
+  const result = { open, close };
+  console.log('🧪 파싱 성공 →', result);
+
+  return result;
+};
+
+
+
+const handleOpenReserve = async (item: Hospital) => {
+  try {
+    setSelectedHospitalId(item.id);       // ✅ 요것도 같이 세팅
+    setSelectedHospitalName(item.name);
+    setRecordVisible(true);
+    setDetailLoading(true);
+    setModalDoctors([]);
+
+    console.log('📌 병원 상세 호출 id:', item.id);
+
+    const url = `${BACKEND_BASE_URL}/hospitals/${item.id}`;
+    console.log('📌 병원 상세 URL:', url);
+
+    const res = await axios.get<HospitalDetailApi>(url);
+
+    // 1) 영업시간 로그 찍기
+    console.log('🧪 [병원 상세] full availableHours =', res.data.availableHours);
+
+    const monRaw = res.data.availableHours?.mon;
+    console.log('🧪 [병원 상세] monRaw =', monRaw, 'typeof =', typeof monRaw);
+
+    // 2) 문자열 → open/close 파싱
+    const parsed = parseHoursFromString(monRaw);
+
+    if (parsed) {
+      setSelectedOpenTime(parsed.open);
+      setSelectedCloseTime(parsed.close);
+    } else {
+      console.log('🧪 파싱 실패, 기본값 사용 (08:00~18:00)');
+      setSelectedOpenTime('08:00');
+      setSelectedCloseTime('18:00');
+    }
+
+    // 3) 의사 리스트 매핑
+    const doctors: Doctor[] =
+      res.data.doctors?.map(d => ({
+        id: String(d.doctorId),
+        name: d.name,
+        title: d.specialty || '의사',
+      })) ?? [];
+
+    setModalDoctors(doctors);
+  } catch (err) {
+    console.log('병원 상세 조회 실패 raw error:', err);
+
+    if (axios.isAxiosError(err)) {
+      console.log('병원 상세 status:', err.response?.status);
+      console.log('병원 상세 data:', err.response?.data);
+    }
+
+    Alert.alert('오류', '병원 상세 정보를 불러오지 못했습니다.');
+    setRecordVisible(false);
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+
+  
+
+ 
+  
 
   const renderHospital = ({ item }: { item: Hospital }) => (
     <TouchableOpacity
@@ -73,10 +268,8 @@ const Reservation: React.FC = () => {
         console.log('병원 선택:', item.name);
       }}
     >
-      {/* 썸네일 자리 (지금은 회색 박스만) */}
       <View style={styles.hospitalThumbnail} />
 
-      {/* 정보 영역 */}
       <View style={styles.hospitalInfo}>
         <Text style={styles.hospitalName}>{item.name}</Text>
         <Text style={styles.hospitalText}>
@@ -85,16 +278,9 @@ const Reservation: React.FC = () => {
         <Text style={styles.hospitalText}>위치 : {item.address}</Text>
       </View>
 
-      {/* 예약하기 버튼 */}
       <TouchableOpacity
         style={styles.reserveButton}
-        onPress={() => {
-          // ✅ 여기서 선택된 병원 정보와 영업시간을 상태에 저장
-          setSelectedHospitalName(item.name);
-          setSelectedOpenTime(item.openTime);
-          setSelectedCloseTime(item.closeTime);
-          setRecordVisible(true);
-        }}
+        onPress={() => handleOpenReserve(item)}
       >
         <Text style={styles.reserveButtonText}>예약하기</Text>
       </TouchableOpacity>
@@ -103,14 +289,12 @@ const Reservation: React.FC = () => {
 
   return (
     <View style={styles.safeArea}>
-      {/* 화면 전체를 한 번만 세로 스크롤 */}
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.containerContent}
       >
         {/* 상단 네비 + 검색바 영역 */}
         <View style={styles.header}>
-          {/* 뒤로가기 */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -122,12 +306,17 @@ const Reservation: React.FC = () => {
             />
           </TouchableOpacity>
 
-          {/* 검색 바 */}
           <View style={styles.searchContainer}>
-            <Image
-              source={require('../assets/icons/search.png')}
-              style={styles.searchIcon}
-            />
+            <TouchableOpacity
+              onPress={fetchHospitals}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={require('../assets/icons/search.png')}
+                style={styles.searchIcon}
+              />
+            </TouchableOpacity>
+
             <TextInput
               style={styles.searchInput}
               placeholder="병원 이름을 검색해주세요"
@@ -135,8 +324,10 @@ const Reservation: React.FC = () => {
               value={searchText}
               onChangeText={setSearchText}
               returnKeyType="search"
+              onSubmitEditing={fetchHospitals}   // ← 엔터로 검색도 유지
             />
           </View>
+
         </View>
 
         {/* 카테고리 섹션 */}
@@ -174,22 +365,49 @@ const Reservation: React.FC = () => {
 
         {/* 병원 리스트 */}
         <View style={styles.listWrapper}>
-          <FlatList
-            data={filteredHospitals}
-            keyExtractor={(item) => item.id}
-            renderItem={renderHospital}
-            ItemSeparatorComponent={() => <View style={styles.cardSeparator} />}
-            contentContainerStyle={styles.listContent}
-            scrollEnabled={false} // 스크롤은 바깥 ScrollView만 사용
-          />
+          {loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator size="small" />
+            </View>
+          ) : (
+            <FlatList
+              data={hospitals}
+              keyExtractor={(item) => item.id}
+              renderItem={renderHospital}
+              ItemSeparatorComponent={() => (
+                <View style={styles.cardSeparator} />
+              )}
+              contentContainerStyle={styles.listContent}
+              scrollEnabled={false}
+              ListEmptyComponent={
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, color: '#6B7280' }}>
+                    조건에 맞는 병원이 없습니다.
+                  </Text>
+                </View>
+              }
+            />
+          )}
         </View>
-        {/* ✅ 병원 예약 모달 */}
+
+        {/* 병원 예약 모달 */}
         <Record_Window
           visible={recordVisible}
+          hospitalId={selectedHospitalId ?? ''} 
           hospitalName={selectedHospitalName}
           openTime={selectedOpenTime}
           closeTime={selectedCloseTime}
-          onClose={() => setRecordVisible(false)}
+          doctors={modalDoctors}
+          loading={detailLoading}
+          onClose={() => {
+            setRecordVisible(false);
+            setModalDoctors([]);
+            setSelectedHospitalId(null);          // ✅ 같이 초기화
+          }}
+          onAppointmentCreated={data => {
+            console.log('🎉 예약 생성 완료 data:', data);
+            // 필요하면 여기서 오늘 예약 다시 불러오기 등 추가 가능
+          }}
         />
       </ScrollView>
     </View>
@@ -210,8 +428,6 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     backgroundColor: '#EFF3FF',
   },
-
-  // 상단 헤더 영역 (뒤로가기 + 검색창 한 줄)
   header: {
     paddingHorizontal: 16,
     paddingTop: 60,
@@ -256,8 +472,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
   },
-
-  // 카테고리 섹션
   categorySection: {
     marginTop: 8,
     paddingHorizontal: 16,
@@ -284,8 +498,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-
-  // 병원 리스트
   listWrapper: {
     paddingHorizontal: 16,
     marginTop: 15,
@@ -296,22 +508,20 @@ const styles = StyleSheet.create({
   },
   hospitalCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',   // ✅ 위쪽을 기준으로 정렬
+    alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  
   hospitalThumbnail: {
     width: 60,
     height: 60,
     borderRadius: 12,
     backgroundColor: '#E5E7EB',
     marginRight: 12,
-    alignSelf: 'flex-start',    // (옵션) 썸네일도 위쪽 정렬
+    alignSelf: 'flex-start',
   },
-  
   hospitalInfo: {
     flex: 1,
   },
@@ -320,7 +530,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
-  
   hospitalText: {
     fontSize: 12,
     color: '#4B5563',
@@ -331,8 +540,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#4F8DFD',
     marginLeft: 8,
-    alignSelf: 'flex-end',      // ✅ 카드의 “아래쪽”으로 붙음
-    marginTop: 8,               // (옵션) 살짝 내려주는 느낌
+    alignSelf: 'flex-end',
+    marginTop: 8,
   },
   reserveButtonText: {
     fontSize: 12,

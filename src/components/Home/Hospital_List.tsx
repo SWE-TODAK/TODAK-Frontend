@@ -21,24 +21,53 @@ type Hospital = {
 };
 
 type Dept = {
-  id: string;
+  id: number;
   name: string;
 };
 
 const DEPARTMENTS: Dept[] = [
-  { id: '1', name: '소아과' },
-  { id: '2', name: '치과' },
-  { id: '3', name: '내과' },
-  { id: '4', name: '정형외과' },
-  { id: '5', name: '피부과' },
-  { id: '6', name: '안과' },
-  { id: '7', name: '한의과' },
-  { id: '8', name: '이비인후과' },
-  { id: '9', name: '비뇨기과' },
-  { id: '10', name: '정신의학과' },
-  { id: '11', name: '신경과' },
-  { id: '12', name: '흉부외과' },
+  { id: 1, name: '내과' },
+  { id: 2, name: '외과' },
+  { id: 3, name: '정형외과' },
+  { id: 4, name: '신경과' },
+  { id: 5, name: '신경외과' },
+  { id: 6, name: '피부과' },
+  { id: 7, name: '이비인후과' },
+  { id: 8, name: '안과' },
+  { id: 9, name: '비뇨의학과' },
+  { id: 10, name: '산부인과' },
+  { id: 11, name: '소아청소년과' },   // UI에서만 '소아과'로 줄이고 싶으면 추후에 따로 처리 가능
+  { id: 12, name: '가정의학과' },
+  { id: 13, name: '정신건강의학과' },
+  { id: 14, name: '재활의학과' },
+  { id: 15, name: '흉부외과' },
+  { id: 16, name: '치과' },
+  { id: 17, name: '마취통증의학과' },
+  { id: 18, name: '기타' },
 ];
+
+// 진료과 ID별 아이콘 맵
+const DEPT_ICONS: Record<number, any> = {
+  1: require('../../assets/icons/department/내과.png'),       // 내과
+  2: require('../../assets/icons/department/외과.png'),        // 외과
+  3: require('../../assets/icons/department/정형외과.png'),          // 정형외과
+  4: require('../../assets/icons/department/신경과.png'),          // 신경과
+  5: require('../../assets/icons/department/신경외과.png'),   // 신경외과
+  6: require('../../assets/icons/department/피부과.png'),          // 피부과
+  7: require('../../assets/icons/department/이비인후과.png'),            // 이비인후과
+  8: require('../../assets/icons/department/안과.png'),            // 안과
+  9: require('../../assets/icons/department/비뇨의학과.png'),        // 비뇨의학과
+  10: require('../../assets/icons/department/산부인과.png'),         // 산부인과
+  11: require('../../assets/icons/department/소아과.png'),    // 소아청소년과
+  12: require('../../assets/icons/department/가정의학과.png'),        // 가정의학과
+  13: require('../../assets/icons/department/정신건강의학과.png'),        // 정신건강의학과
+  14: require('../../assets/icons/department/재활의학과.png'),         // 재활의학과
+  15: require('../../assets/icons/department/흉부외과.png'),      // 흉부외과
+  16: require('../../assets/icons/department/치과.png'),        // 치과
+  17: require('../../assets/icons/department/마취통증의학과.png'),    // 마취통증의학과
+  18: require('../../assets/icons/department/기타.png'),           // 기타
+};
+
 
 const Hospital_List: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
@@ -57,7 +86,7 @@ const Hospital_List: React.FC = () => {
 
   const fetchHospitals = async () => {
     try {
-      const res = await api.get('api/v1/hospitals', {
+      const res = await api.get('/hospitals', {
         params: {
           search: searchText || undefined,
           category: selectedCategory || undefined,
@@ -84,10 +113,21 @@ const Hospital_List: React.FC = () => {
 
       {/* 검색 바 */}
       <View style={styles.searchContainer}>
-        <Image
-          source={require('../../assets/icons/search.png')}
-          style={styles.searchIcon}
-        />
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate('Reservation', {
+              searchText,
+              categories: DEPARTMENTS.map((d) => d.name),
+            });
+          }}
+          activeOpacity={0.7}
+        >
+          <Image
+            source={require('../../assets/icons/search.png')}
+            style={styles.searchIcon}
+          />
+        </TouchableOpacity>
+
         <TextInput
           style={{ flex: 1, fontSize: 14 }}
           placeholder="병원 이름을 검색해주세요"
@@ -96,19 +136,21 @@ const Hospital_List: React.FC = () => {
           onChangeText={setSearchText}
           returnKeyType="search"
           onSubmitEditing={() => {
-            //setPage(1);
-            //fetchHospitals();
-            navigation.navigate('Reservation');
+            navigation.navigate('Reservation', {
+              searchText,
+              categories: DEPARTMENTS.map((d) => d.name),
+            });
           }}
         />
-     </View>
+      </View>
+
 
 
       {/* 진료과 그리드 영역 (이 안만 스크롤) */}
       <View style={styles.gridWrapper}>
         <FlatList
           data={visibleData}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           numColumns={4}
           scrollEnabled={expanded}          // 전체보기일 때만 스크롤
           nestedScrollEnabled               // 바깥 ScrollView 안에서도 이 부분만 스크롤
@@ -117,12 +159,23 @@ const Hospital_List: React.FC = () => {
             <TouchableOpacity
               style={styles.deptItem}
               onPress={() => {
-                // 나중에 여기서 category로 필터해서 넘겨줄 수도 있음
-                navigation.navigate('Reservation');
+                navigation.navigate('Reservation', {
+                  categoryId: item.id,
+                  categoryName: item.name,
+                  categories: DEPARTMENTS.map((d) => d.name), 
+                });
               }}
               activeOpacity={0.8}
             >
-              <View style={styles.deptIconBox} />
+              <View style={styles.deptIconBox}>
+                {DEPT_ICONS[item.id] && (
+                  <Image
+                    source={DEPT_ICONS[item.id]}
+                    style={styles.deptIconImage}
+                    resizeMode="contain"
+                  />
+                )}
+              </View>
               <Text style={styles.deptLabel}>{item.name}</Text>
             </TouchableOpacity>
           )}
@@ -247,10 +300,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#EEF3FF',
     marginBottom: 10,
+    justifyContent: 'center',   // 🔹 아이콘 가운데 정렬
+    alignItems: 'center',
   },
   deptLabel: {
     fontSize: 12,
     color: '#4B5563',
+  },
+  deptIconImage: {
+    width: 30,
+    height: 30,
   },
 
   // 접혀 있을 때 아래쪽 "전체보기"
@@ -277,4 +336,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row', // 텍스트 + 아이콘 가로
   },
+
+  
+
 });

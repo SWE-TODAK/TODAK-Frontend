@@ -64,7 +64,7 @@ const commentTemplates: Record<
     good: {
       line1: '최근 측정 결과가 모두 정상 범위입니다.',
       line2: '수축기 평균 수치가 안정적으로 유지되고 있어요.',
-      line3: '지금처럼 규칙적인 식습관과 가벼운 운동을 계속 이어가 주세요. 💚',
+      line3: '지금처럼 규칙적인 식습관과 가벼운 운동을 계속 이어가 주세요.',
     },
     normal: {
       line1: '최근 측정 결과가 살짝 높은 편이에요.',
@@ -81,7 +81,7 @@ const commentTemplates: Record<
     good: {
       line1: '혈당이 건강한 범위에서 잘 유지되고 있습니다.',
       line2: '식후 급격한 혈당 상승이 없도록 지금의 패턴을 유지해 주세요.',
-      line3: '규칙적인 식사와 가벼운 활동이 현재 상태 유지를 도와줘요. 💚',
+      line3: '규칙적인 식사와 가벼운 활동이 현재 상태 유지를 도와줘요.',
     },
     normal: {
       line1: '혈당이 약간 올라가 있는 상태예요.',
@@ -98,7 +98,7 @@ const commentTemplates: Record<
     good: {
       line1: '간수치가 안정적인 범위 안에 있어요.',
       line2: '과음만 피하신다면 지금 상태를 잘 유지하실 수 있습니다.',
-      line3: '수면과 식습관을 규칙적으로 유지해 주세요. 💚',
+      line3: '수면과 식습관을 규칙적으로 유지해 주세요.',
     },
     normal: {
       line1: '간수치가 다소 올라가 있는 편이에요.',
@@ -114,13 +114,28 @@ const commentTemplates: Record<
 };
 
 const HealthMetricComment: React.FC<Props> = ({ metric, data }) => {
-  // 데이터 없으면 안전하게 처리
-  const safeData = data && data.length > 0 ? data : [{ dateLabel: '', value: 0 }];
+  // ✅ 데이터 없을 때: 안내 문구만 보여주기
+  if (!data || data.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Image
+            source={require('../../assets/icons/check-blue.png')}
+            style={styles.checkIcon}
+          />
+          <Text style={styles.title}>{CARD_TITLE[metric]}</Text>
+        </View>
+        <View style={styles.body}>
+          <Text style={styles.bodyText}>데이터가 존재하지 않습니다.</Text>
+        </View>
+      </View>
+    );
+  }
 
-  const recent = safeData.slice(-3); // 최근 3개만 사용
+  // ✅ 데이터 있을 때만 평균/상태 계산
+  const recent = data.slice(-3); // 최근 3개
   const avg =
-    recent.reduce((sum, d) => sum + d.value, 0) /
-    (recent.length || 1);
+    recent.reduce((sum, d) => sum + d.value, 0) / recent.length;
 
   const latestValue = recent[recent.length - 1].value;
   const status = getStatus(metric, latestValue);
