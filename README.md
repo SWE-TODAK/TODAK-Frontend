@@ -125,10 +125,6 @@ yarn android
 - Android SDK 36 (Android 15)
 - JDK 17 (Zulu OpenJDK 권장)
 
----
-
-필수 설정 가이드
-
 ### 1. JDK 17 설치 및 버전 확인
 
 JDK 17 설치 후 아래 명령으로 버전을 확인: java -version
