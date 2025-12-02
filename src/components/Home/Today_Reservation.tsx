@@ -1,52 +1,56 @@
-// src/components/Today_Reservation.tsx
+// src/components/Home/Today_Reservation.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Hospital_Record from '../../components/Home/Hospital_Record';
 import axios from '../../api/axios';
 
-// 백엔드 응답 타입
-type Consultation = {
-  consultationId: number;
+// 🔹 /appointments/my/today 응답 타입
+type TodayAppointment = {
+  appointmentId: number;
+  patientId: string;
+  hospitalId: number;
   hospitalName: string;
+  doctorId: number;
   doctorName: string;
-  consultationTime: string; // 예: "2025-12-02T07:32:44.158Z"
-  summaryPreview: string;
+  departmentId: number | null;
+  departmentName: string | null;
+  datetime: string;   // "2025-12-02T17:28:44.025Z"
+  status: string;     // "REQUESTED" 등
 };
 
 const Today_Reservation: React.FC = () => {
-  const [reservation, setReservation] = useState<Consultation | null>(null);
+  // ✅ 훅들은 항상 컴포넌트 최상단에서, 조건 없이
+  const [reservation, setReservation] = useState<TodayAppointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
+    // 화면에 포커스 안 돼 있으면 호출 안 함
+    if (!isFocused) {
+      return;
+    }
+
     const fetchTodayReservation = async () => {
       try {
         setLoading(true);
 
-        // ✅ 오늘 날짜를 YYYY-MM-DD 로 만들기
-        // (UTC 기준이지만 보통 LocalDate로만 쓰면 문제 없음)
-        const todayStr = new Date().toISOString().slice(0, 10); // "2025-12-02"
-        console.log('🔎 Today date param:', todayStr);
+        const res = await axios.get<TodayAppointment | TodayAppointment[]>(
+          '/appointments/my/today',
+        );
 
-        // ✅ /consultations/my/date?date=YYYY-MM-DD 호출
-        const res = await axios.get<Consultation[]>('/consultations/my/date', {
-          params: { date: todayStr },
-        });
+        let appt: TodayAppointment | null = null;
 
-        const list = res.data ?? [];
-        console.log('✅ 오늘의 예약 응답:', list);
-
-        // 오늘 날짜 예약이 여러 개면 첫 번째만 사용
-        if (list.length > 0) {
-          setReservation(list[0]);
-        } else {
-          setReservation(null);
+        if (Array.isArray(res.data)) {
+          appt = res.data.length > 0 ? res.data[0] : null;
+        } else if (res.data) {
+          appt = res.data;
         }
-      } catch (err) {
-        // 🔥 500 에러 디버깅용 상세 로그
-        //const axiosErr = err as AxiosError;
-        //console.log('📛 오늘의 예약 조회 실패 - status:', axiosErr.response?.status);
-        //console.log('📛 오늘의 예약 조회 실패 - data:', axiosErr.response?.data);
 
+        console.log('✅ 오늘의 예약 응답:', appt);
+        setReservation(appt);
+      } catch (err) {
+        console.log('📛 오늘의 예약 조회 실패:', err);
         setReservation(null);
       } finally {
         setLoading(false);
@@ -54,17 +58,18 @@ const Today_Reservation: React.FC = () => {
     };
 
     fetchTodayReservation();
-  }, []);
+  }, [isFocused]); // ✅ 포커스가 바뀔 때마다 다시 조회
 
   // ---------------- 렌더링 분기 ----------------
 
-  // 1) 로딩 중
   if (loading) {
     return (
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>오늘의 예약</Text>
-        <View style={styles.emptyCard}>
-          <ActivityIndicator />
+        <View style={styles.cardWrapper}>
+          <View style={styles.emptyCard}>
+            <ActivityIndicator />
+          </View>
         </View>
       </View>
     );
@@ -74,7 +79,6 @@ const Today_Reservation: React.FC = () => {
     return (
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>오늘의 예약</Text>
-        {/* ✅ 예약 있을 때와 똑같이 cardWrapper 안에 넣기 */}
         <View style={styles.cardWrapper}>
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>오늘 예정된 예약이 없습니다.</Text>
@@ -84,15 +88,14 @@ const Today_Reservation: React.FC = () => {
     );
   }
 
-  // 3) 오늘 예약이 있을 때 카드 보여주기
-  const dateObj = new Date(reservation.consultationTime);
+  const dateObj = new Date(reservation.datetime);
   const dateText = `${dateObj.getMonth() + 1}월 ${dateObj.getDate()}일`;
   const timeText = `${String(dateObj.getHours()).padStart(2, '0')}:${String(
     dateObj.getMinutes(),
   ).padStart(2, '0')}`;
 
   const hospitalName = reservation.hospitalName;
-  const department = reservation.doctorName; // 진료과 필드 따로 있으면 수정
+  const department = reservation.departmentName || reservation.doctorName;
 
   return (
     <View style={styles.sectionContainer}>
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // 오늘 예약 없을 때 카드
+  // "오늘 예약 없음" 카드
   emptyCard: {
     width: '100%',
     paddingHorizontal: 18,
@@ -158,20 +161,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BFD3FF',
     justifyContent: 'center',
-    alignItems:'center',
-    marginBottom:75,
+    alignItems: 'center',
+    marginBottom: 75,
   },
   emptyText: {
     fontSize: 16,
     color: '#444',
   },
 
-
   cardWrapper: {
     width: '100%',
     paddingHorizontal: 20,
   },
-  // 예약 있을 때 카드 (그대로 두고 cardWrapper만 공유)
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,

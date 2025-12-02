@@ -42,6 +42,15 @@ const buildTimeSlots = (openTime: string, closeTime: string): string[] => {
   return slots;
 };
 
+// ✨ 화면에 보여줄 날짜 포맷 (예: 12월 2일 (월))
+const formatKoreanDate = (d: Date) => {
+  const month = d.getMonth() + 1;
+  const date = d.getDate();
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const day = dayNames[d.getDay()];
+  return `${month}월 ${date}일 (${day})`;
+};
+
 const Record_Window: React.FC<RecordWindowProps> = ({
   visible,
   hospitalId,
@@ -57,6 +66,9 @@ const Record_Window: React.FC<RecordWindowProps> = ({
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // ⭐ 새로 추가: 선택된 날짜 (기본값: 오늘)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
   const timeSlots = useMemo(
     () => buildTimeSlots(openTime, closeTime),
     [openTime, closeTime],
@@ -65,6 +77,7 @@ const Record_Window: React.FC<RecordWindowProps> = ({
   const handleClose = () => {
     setSelectedTime(null);
     setSelectedDoctorId(null);
+    setSelectedDate(new Date()); // 닫을 때 다시 오늘로 초기화
     onClose();
   };
 
@@ -82,12 +95,14 @@ const Record_Window: React.FC<RecordWindowProps> = ({
     try {
       setSubmitting(true);
 
-      const now = new Date();
+      // 🔸 오늘(now)이 아니라, 사용자가 선택한 날짜 사용
+      const base = selectedDate;
       const [hourStr, minuteStr] = selectedTime.split(':'); // "09:00" → ["09","00"]
+
       const appointmentDate = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
+        base.getFullYear(),
+        base.getMonth(),
+        base.getDate(),
         parseInt(hourStr, 10),
         parseInt(minuteStr || '0', 10),
         0,
@@ -112,11 +127,12 @@ const Record_Window: React.FC<RecordWindowProps> = ({
 
       Alert.alert(
         '예약 완료',
-        `병원: ${hospitalName}\n진료 시간: ${selectedTime}\n진료 의사: ${doctor?.name} ${doctor?.title}\n\n예약이 생성되었습니다.`,
+        `병원: ${hospitalName}\n진료 날짜: ${formatKoreanDate(base)}\n진료 시간: ${selectedTime}\n진료 의사: ${doctor?.name} ${doctor?.title}\n\n예약이 생성되었습니다.`,
       );
 
       setSelectedTime(null);
       setSelectedDoctorId(null);
+      setSelectedDate(new Date());
       onClose();
     } catch (e) {
       console.log('❌ 예약 생성 실패:', e);
@@ -127,6 +143,15 @@ const Record_Window: React.FC<RecordWindowProps> = ({
   };
 
   const disabled = loading || doctors.length === 0 || submitting;
+
+  // 날짜 하루 앞/뒤로 움직이는 헬퍼
+  const changeDateBy = (delta: number) => {
+    setSelectedDate(prev => {
+      const next = new Date(prev);
+      next.setDate(prev.getDate() + delta);
+      return next;
+    });
+  };
 
   return (
     <Modal
@@ -150,6 +175,30 @@ const Record_Window: React.FC<RecordWindowProps> = ({
 
           {/* 병원 이름 */}
           <Text style={styles.hospitalName}>{hospitalName}</Text>
+
+          {/* ⭐ 진료 날짜 선택 (작은 영역) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>진료 날짜</Text>
+            <View style={styles.dateRow}>
+              <TouchableOpacity
+                style={styles.dateArrowButton}
+                onPress={() => changeDateBy(-1)}
+                disabled={disabled}
+              >
+                <Text style={styles.dateArrowText}>{'<'}</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.dateText}>{formatKoreanDate(selectedDate)}</Text>
+
+              <TouchableOpacity
+                style={styles.dateArrowButton}
+                onPress={() => changeDateBy(1)}
+                disabled={disabled}
+              >
+                <Text style={styles.dateArrowText}>{'>'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* 진료 시간 선택 */}
           <View style={styles.section}>
@@ -250,6 +299,7 @@ const Record_Window: React.FC<RecordWindowProps> = ({
 };
 
 export default Record_Window;
+
 
 
 const styles = StyleSheet.create({
@@ -385,4 +435,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  dateArrowButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  dateArrowText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  dateText: {
+    minWidth: 140,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+
 });

@@ -1,5 +1,5 @@
 // src/screens/Mycare.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DeptCategoryTabs, { DeptItem } from '../components/Mycare/DeptCategoryTabs';
 import MycareRecordSection from '../components/Mycare/MycareRecordSection';
+import axios from '../api/axios';
 
 type MycareRecord = {
   id: string;
@@ -20,6 +21,16 @@ type MycareRecord = {
   doctorName: string;
   summary: string;
   prescription: string;
+};
+
+// 🔹 /consultations/my 응답 타입 (캘린더에서 쓰던 것과 동일)
+type ConsultationDto = {
+  consultationId: number;
+  hospitalName: string;
+  doctorName: string;
+  consultationTime: string; // "2025-12-02T18:58:29.573Z"
+  summaryPreview: string;
+  // 나중에 departmentName, prescriptionSummary 같은 게 생기면 여기 추가해서 사용
 };
 
 const Health: React.FC = () => {
@@ -36,32 +47,40 @@ const Health: React.FC = () => {
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>('eye');
 
-  // 🔹 진료 데이터 (지금은 하드코딩, 나중에 API로 교체 가능)
-  const records: MycareRecord[] = [
-    {
-      id: '1',
-      deptId: 'eye',
-      dateLabel: '2025.10.26',
-      clinicName: '토닥 안과',
-      doctorName: '최홍서 원장님',
-      summary: '시력검사 결과 큰 변화는 없어요.\n정기검진만 권장돼요.',
-      prescription: '인공눈물(히알루론산 점안액)',
-    },
-    {
-      id: '2',
-      deptId: 'eye',
-      dateLabel: '2025.10.19',
-      clinicName: '토닥 안과',
-      doctorName: '최홍서 원장님',
-      summary: '결막염 진단 후 점안약 처방을 받았어요.',
-      prescription:
-        '항생제 점안제(토브렉스),\n항생제·스테로이드 복합제(토브라덱스)',
-    },
-    // 필요하면 다른 deptId 데이터도 추가
-  ];
+  // 🔹 전체 진료 기록 (API에서 받아온 뒤, MycareRecord로 변환해서 저장)
+  const [records, setRecords] = useState<MycareRecord[]>([]);
 
+  // 🔹 첫 진입 시 /consultations/my 호출
+  useEffect(() => {
+    const fetchMyConsultations = async () => {
+      try {
+        const res = await axios.get<ConsultationDto[]>('/consultations/my');
+        console.log('✅ /consultations/my (mycare):', res.data);
+
+        const mapped: MycareRecord[] = (res.data || []).map((c) => ({
+          id: String(c.consultationId),
+          deptId: getDeptIdFromConsultation(c),
+          dateLabel: formatDateLabel(c.consultationTime),
+          clinicName: c.hospitalName,
+          doctorName: c.doctorName,
+          summary: c.summaryPreview,
+          // prescription 은 아직 API에 없다고 가정 → 나중에 상세 API 나오면 교체
+          prescription: '',
+        }));
+
+        setRecords(mapped);
+      } catch (e) {
+        console.log('📛 내 진료 목록 조회 실패 (mycare):', e);
+        setRecords([]);
+      }
+    };
+
+    fetchMyConsultations();
+  }, []);
+
+  // 🔹 선택된 진료과만 필터링
   const filteredRecords = records.filter(
-    r => r.deptId === selectedDeptId,
+    (r) => r.deptId === selectedDeptId,
   );
 
   return (
@@ -97,7 +116,7 @@ const Health: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {filteredRecords.map(record => (
+          {filteredRecords.map((record) => (
             <MycareRecordSection
               key={record.id}
               dateLabel={record.dateLabel}
@@ -106,7 +125,7 @@ const Health: React.FC = () => {
               summary={record.summary}
               prescription={record.prescription}
               onPressDetail={() => {
-                // TODO: 상세 페이지 네비게이션 연결
+                // TODO: 상세 페이지 네비게이션 연결 (consultationId = record.id)
                 console.log('상세 보기:', record.id);
               }}
             />
@@ -126,6 +145,31 @@ const Health: React.FC = () => {
 };
 
 export default Health;
+
+/* ---------- 유틸 / 매핑 함수들 ---------- */
+
+// 🔹 ISO → "YYYY.MM.DD"
+function formatDateLabel(iso: string) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${y}.${m}.${day}`;
+}
+
+// 🔹 백엔드 데이터 → 내과/안과/이비인후과 카테고리 매핑
+//    👉 지금은 임시 규칙이라, 나중에 departmentName 내려주면 여기만 고치면 됨.
+function getDeptIdFromConsultation(c: ConsultationDto): string {
+  const name = `${c.hospitalName} ${c.doctorName}`; // 임시로 두 문자열 합쳐서 검사
+
+  // 예시: 병원 이름이나 의사 이름에 특정 키워드가 포함되어 있을 때
+  if (name.includes('안과')) return 'eye';
+  if (name.includes('이비인후과')) return 'ent';
+  if (name.includes('내과')) return 'internal';
+
+  // 기본값 (백엔드에서 필드 추가되면 이 부분 삭제/수정)
+  return 'internal';
+}
 
 const styles = StyleSheet.create({
   root: {
