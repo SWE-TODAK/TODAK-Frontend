@@ -36,7 +36,6 @@ STT 기반 진료 자동화, 건강 데이터 시각화, 병원 예약 등 모�
 - **State Management:** React Hooks, Context API
 - **Network:** Axios
 - **Chart:** Victory Native
-- 
 ---
 
 ## Architecture
@@ -47,7 +46,6 @@ STT 기반 진료 자동화, 건강 데이터 시각화, 병원 예약 등 모�
 
 ##  Project Structure
 
-bash
 src
  ├─ api               # Axios 인스턴스 및 API 함수
  ├─ assets            # 아이콘, 로고 등 정적 이미지
