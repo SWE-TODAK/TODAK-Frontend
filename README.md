@@ -87,7 +87,7 @@ src
 
 
 ---
-## Getting Started — Android
+## 설치 및 실행방법 — Android
 
 프로젝트 실행 전 React Native 환경 설정(Node.js, JDK, Android Studio)이 완료해야함
 
