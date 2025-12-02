@@ -45,7 +45,7 @@ STT 기반 진료 자동화, 건강 데이터 시각화, 병원 예약 등 모�
 ---
 
 ##  Project Structure
-\``
+```bash
 src
  ├─ api               # Axios 인스턴스 및 API 함수
  ├─ assets            # 아이콘, 로고 등 정적 이미지
@@ -59,7 +59,7 @@ src
  ├─ navigation        # 네비게이션(Stack/Bottom Tab)
  ├─ screens           # 주요 페이지(Login/Main/Health/Mycare 등)
  └─ utils             # 카카오 로그인, AsyncStorage 관련 유틸
-'
+'''
  
 ---
 ## Core Logic Flows
