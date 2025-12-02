@@ -1,4 +1,4 @@
-// src/components/Record_Window.tsx
+// src/components/Home/Record/Record_Window.tsx
 import React, { useState, useMemo } from 'react';
 import {
   Modal,
@@ -6,29 +6,28 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
-  Alert,             // ✅ 추가
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import api from '../../../api/axios';
 
-type Doctor = {
+export type Doctor = {
   id: string;
   name: string;
-  title: string; // 원장, 부원장 등
+  title: string; // 원장, 전문의 등
 };
 
 type RecordWindowProps = {
   visible: boolean;
+  hospitalId: string;
   hospitalName: string;
-  openTime: string;   // 예: "8:00"
-  closeTime: string;  // 예: "18:00"
+  openTime: string;   // "09:00"
+  closeTime: string;  // "18:00"
+  doctors: Doctor[];
+  loading?: boolean;
   onClose: () => void;
+  onAppointmentCreated?: (data: any) => void;
 };
-
-const DOCTORS: Doctor[] = [
-  { id: '1', name: '최홍서', title: '원장' },
-  { id: '2', name: '최희수', title: '부원장' },
-  { id: '3', name: '정선우', title: '부원장' },
-];
 
 // 영업시간에서 12:00, 13:00만 제외하고 나머지 정각 시간 생성
 const buildTimeSlots = (openTime: string, closeTime: string): string[] => {
@@ -38,62 +37,104 @@ const buildTimeSlots = (openTime: string, closeTime: string): string[] => {
   const slots: string[] = [];
   for (let h = startHour; h < endHour; h++) {
     if (h === 12 || h === 13) continue; // 점심시간 제외
-    slots.push(`${h}:00`);
+    slots.push(`${String(h).padStart(2, '0')}:00`);
   }
   return slots;
 };
 
 const Record_Window: React.FC<RecordWindowProps> = ({
   visible,
+  hospitalId,
   hospitalName,
   openTime,
   closeTime,
+  doctors,
+  loading = false,
   onClose,
+  onAppointmentCreated,
 }) => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // 영업시간 → 진료 시간 슬롯 배열
   const timeSlots = useMemo(
     () => buildTimeSlots(openTime, closeTime),
-    [openTime, closeTime]
+    [openTime, closeTime],
   );
 
-  // ✅ X를 눌러 닫을 때: 선택했던 값들 초기화 + 부모 onClose 호출
   const handleClose = () => {
     setSelectedTime(null);
     setSelectedDoctorId(null);
     onClose();
   };
 
-  // ✅ 예약 확정 버튼 눌렀을 때
-  const handleConfirm = () => {
+  // ✅ 예약 확정 버튼: 실제 /appointments 호출
+  const handleConfirm = async () => {
     if (!selectedTime || !selectedDoctorId) {
       Alert.alert('알림', '진료 시간과 진료 의사를 모두 선택해주세요.');
       return;
     }
+    if (!hospitalId) {
+      Alert.alert('알림', '병원 정보가 올바르지 않습니다.');
+      return;
+    }
 
-    const doctor = DOCTORS.find((d) => d.id === selectedDoctorId);
+    try {
+      setSubmitting(true);
 
-    Alert.alert(
-      '예약 확정',
-      `병원: ${hospitalName}\n진료 시간: ${selectedTime}\n진료 의사: ${doctor?.name} ${doctor?.title}\n\n예약이 확정되었습니다.`
-    );
+      const now = new Date();
+      const [hourStr, minuteStr] = selectedTime.split(':'); // "09:00" → ["09","00"]
+      const appointmentDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        parseInt(hourStr, 10),
+        parseInt(minuteStr || '0', 10),
+        0,
+        0,
+      );
+      const datetime = appointmentDate.toISOString();
 
-    // 확인 후에도 선택값 초기화 + 모달 닫기
-    setSelectedTime(null);
-    setSelectedDoctorId(null);
-    onClose();
+      const payload = {
+        hospitalId: Number(hospitalId),
+        doctorId: Number(selectedDoctorId),
+        datetime,
+      };
+
+      console.log('📨 예약 요청 payload:', payload);
+
+      const res = await api.post('/appointments', payload);
+      console.log('✅ 예약 생성 응답:', res.data);
+
+      onAppointmentCreated?.(res.data);
+
+      const doctor = doctors.find(d => d.id === selectedDoctorId);
+
+      Alert.alert(
+        '예약 완료',
+        `병원: ${hospitalName}\n진료 시간: ${selectedTime}\n진료 의사: ${doctor?.name} ${doctor?.title}\n\n예약이 생성되었습니다.`,
+      );
+
+      setSelectedTime(null);
+      setSelectedDoctorId(null);
+      onClose();
+    } catch (e) {
+      console.log('❌ 예약 생성 실패:', e);
+      Alert.alert('오류', '예약 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const disabled = loading || doctors.length === 0 || submitting;
 
   return (
     <Modal
       visible={visible}
       animationType="fade"
       transparent
-      onRequestClose={handleClose}   // ✅ 변경
+      onRequestClose={handleClose}
     >
-      {/* 반투명 배경 */}
       <View style={styles.backdrop}>
         <View style={styles.card}>
           {/* 상단 타이틀 + 닫기 */}
@@ -110,12 +151,12 @@ const Record_Window: React.FC<RecordWindowProps> = ({
           {/* 병원 이름 */}
           <Text style={styles.hospitalName}>{hospitalName}</Text>
 
-          {/* 진료 시간 */}
+          {/* 진료 시간 선택 */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>진료 시간</Text>
 
             <View style={styles.timeWrap}>
-              {timeSlots.map((time) => {
+              {timeSlots.map(time => {
                 const selected = selectedTime === time;
                 return (
                   <TouchableOpacity
@@ -126,6 +167,7 @@ const Record_Window: React.FC<RecordWindowProps> = ({
                     ]}
                     onPress={() => setSelectedTime(time)}
                     activeOpacity={0.8}
+                    disabled={disabled}
                   >
                     <Text
                       style={[
@@ -141,43 +183,64 @@ const Record_Window: React.FC<RecordWindowProps> = ({
             </View>
           </View>
 
-          {/* 진료 의사 */}
+          {/* 진료 의사 선택 */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>진료 의사</Text>
 
-            <View style={styles.doctorRow}>
-              {DOCTORS.map((doc) => {
-                const selected = selectedDoctorId === doc.id;
-                return (
-                  <TouchableOpacity
-                    key={doc.id}
-                    style={[
-                      styles.doctorCard,
-                      selected && styles.doctorCardSelected,
-                    ]}
-                    onPress={() => setSelectedDoctorId(doc.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.doctorIconCircle}>
-                      <Text style={{ fontSize: 24, color: '#4F8DFD' }}>👨‍⚕️</Text>
-                    </View>
+            {loading ? (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <ActivityIndicator size="small" />
+                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
+                  의사 정보를 불러오는 중입니다...
+                </Text>
+              </View>
+            ) : doctors.length === 0 ? (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                  의사 정보가 없습니다.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.doctorRow}>
+                {doctors.map(doc => {
+                  const selected = selectedDoctorId === doc.id;
+                  return (
+                    <TouchableOpacity
+                      key={doc.id}
+                      style={[
+                        styles.doctorCard,
+                        selected && styles.doctorCardSelected,
+                      ]}
+                      onPress={() => setSelectedDoctorId(doc.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.doctorIconCircle}>
+                        <Text style={{ fontSize: 24 }}>👨‍⚕️</Text>
+                      </View>
 
-                    <Text style={styles.doctorName}>{doc.name}</Text>
-                    <Text style={styles.doctorTitle}>{doc.title}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                      <Text style={styles.doctorName}>{doc.name}</Text>
+                      <Text style={styles.doctorTitle}>{doc.title}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
-          {/* ✅ 예약 확정 버튼 (맨 아래, 가운데 정렬) */}
+          {/* 예약 확정 버튼 */}
           <View style={styles.confirmWrapper}>
             <TouchableOpacity
-              style={styles.confirmButton}
+              style={[
+                styles.confirmButton,
+                disabled && { backgroundColor: '#9CA3AF' },
+              ]}
               onPress={handleConfirm}
               activeOpacity={0.8}
+              disabled={disabled}
             >
-              <Text style={styles.confirmText}>예약 확정하기</Text>
+              <Text style={styles.confirmText}>
+                {submitting ? '예약 중...' : '예약 확정하기'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -187,6 +250,7 @@ const Record_Window: React.FC<RecordWindowProps> = ({
 };
 
 export default Record_Window;
+
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -216,12 +280,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  modalLogo: {
-    width: 22,
-    height: 22,
-    marginRight: 6,
-    resizeMode: 'contain',
-  },
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
@@ -246,8 +304,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-
-  // 시간 슬롯
   timeWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -272,8 +328,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-
-  // 의사 카드
   doctorRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -305,12 +359,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  doctorIconImage: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-    tintColor: '#4F8DFD',
-  },
   doctorName: {
     fontSize: 13,
     fontWeight: '600',
@@ -320,8 +368,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6B7280',
   },
-
-  // ✅ 예약 확정 버튼 스타일
   confirmWrapper: {
     marginTop: 16,
     alignItems: 'center',

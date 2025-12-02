@@ -7,21 +7,32 @@ import FirstScreen from '../screens/FirstScreen';
 import Login from '../screens/Login';
 import AuthGate from '../screens/AuthGate';
 import Reservation from '../screens/Reservation';
-
 import MainTabNavigator from './MainTabNavigator';
+
+import Setting from '../screens/Setting';
+
+// 🔥 추가됨: 나중에 실제 화면 만들기 전까지 임시 Placeholder 화면
+import { View, Text } from 'react-native';
+
 
 export type RootStackParamList = {
   First: undefined;
   Login: undefined;
   AuthGate: undefined;
-  MainTabs: undefined; // 탭 네비게이터
+  MainTabs: undefined; 
   Reservation: undefined;
+  Setting: undefined;
+
+  // 🔥 설정 메뉴 관련 화면들 추가
+  Family: undefined;
+  ReservationHistory: undefined;
+  AppSetting: undefined;
+  NotificationSetting: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const RootNavigator = () => {
-
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -32,9 +43,12 @@ const RootNavigator = () => {
         <Stack.Screen name="First" component={FirstScreen} />
         <Stack.Screen name="Login" component={Login} />
 
-        {/* 메인 페이지 = 탭 네비게이터 */}
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="Reservation" component={Reservation} />
+
+        {/* 🔥 Setting 자체 화면도 등록 */}
+        <Stack.Screen name="Setting" component={Setting} />
+
         
       </Stack.Navigator>
     </NavigationContainer>

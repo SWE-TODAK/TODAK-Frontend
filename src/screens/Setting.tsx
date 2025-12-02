@@ -9,11 +9,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SettingMenuList from '../components/Setting/SettingMenuList';
+import { clearAllTokens } from '../utils/authStorage';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/RootNavigator';
+
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Setting: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavProp>();
 
-  // 🔹 지금은 더미 데이터 (나중에 API 연동하면 여기만 바꾸면 됨)
+  // 🔹 지금은 더미 데이터
   const dummyUser = {
     name: '토닥 님',
     email: 'todak@example.com',
@@ -21,7 +28,6 @@ const Setting: React.FC = () => {
 
   return (
     <View style={styles.root}>
-
       {/* 상태바 영역 */}
       <View style={{ height: insets.top, backgroundColor: 'rgba(236, 242, 252, 1)' }} />
 
@@ -54,22 +60,17 @@ const Setting: React.FC = () => {
         </View>
       </View>
 
-      {/* 아래 영역은 일단 비워둠 */}
+      {/* 메뉴 리스트 */}
       <SettingMenuList
-        onPressFamily={() => {
-          console.log('가족관리 눌림');
-        }}
-        onPressReservation={() => {
-          console.log('예약 내역 눌림');
-        }}
-        onPressAppSetting={() => {
-          console.log('앱 설정 눌림');
-        }}
-        onPressNotification={() => {
-          console.log('알림 설정 눌림');
+        onPressFamily={() => navigation.navigate('Family')}
+        onPressReservation={() => navigation.navigate('ReservationHistory')}
+        onPressAppSetting={() => navigation.navigate('AppSetting')}
+        onPressNotification={() => navigation.navigate('NotificationSetting')}
+        onPressLogout={async () => {
+          await clearAllTokens();
+          navigation.replace('Login'); // 🔥 로그아웃 후 Login 이동
         }}
       />
-
     </View>
   );
 };
@@ -79,10 +80,9 @@ export default Setting;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: 'rgba(236, 242, 252, 1)', // 전체 연파랑
+    backgroundColor: 'rgba(236, 242, 252, 1)',
   },
 
-  /* ---------- 상단 아이콘 행 ---------- */
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -99,7 +99,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  /* ---------- 프로필 영역 ---------- */
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -120,9 +119,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  profileTextBox: {
-    flex: 1,
-  },
+  profileTextBox: { flex: 1 },
   profileName: {
     fontSize: 18,
     fontWeight: '700',

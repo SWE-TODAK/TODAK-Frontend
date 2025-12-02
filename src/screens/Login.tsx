@@ -10,20 +10,23 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Image,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ✅ api / saveAccessToken 는 이제 여기서 안 씀
-// import api from '../api/axios'
+// ✅ 백엔드 호출 & 토큰 저장
+import api from '../api/axios';
+import { saveAccessToken, getAccessToken } from '../utils/authStorage'; 
+
+// ✅ 카카오 로그인 유틸 (start + code→token 교환)
+import { startKakaoLogin, getKakaoToken } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
 import LoginIntro2 from '../components/Login/LoginIntro2';
 import LoginIntro3 from '../components/Login/LoginIntro3';
-import { startKakaoLogin } from '../utils/kakaoAuth';
-// import { saveAccessToken } from '../utils/authStorage';
 
 type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -33,42 +36,121 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const Login: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView | null>(null);
-  const currentIndexRef = useRef(0); // 실제 현재 인덱스 저장
-
-  // 🔁 자동 슬라이드: interval은 딱 한 번만 생성
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const nextIndex = (currentIndexRef.current + 1) % TOTAL_PAGES;
-      currentIndexRef.current = nextIndex;
-
-      scrollRef.current?.scrollTo({
-        x: nextIndex * SCREEN_WIDTH,
-        animated: true,
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
+  const currentIndexRef = useRef(0);
   const navigation = useNavigation<LoginNavProp>();
 
-  const handleKakaoLogin = async () => {
+   // ✅ 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
+   useEffect(() => {
+    const checkLoggedIn = async () => {
+      try {
+        const token = await getAccessToken();
+        if (token) {
+          console.log('🔵 이미 로그인된 사용자, MainTabs로 바로 이동');
+          navigation.replace('MainTabs');
+        }
+      } catch (e) {
+        console.log('자동 로그인 체크 실패', e);
+      }
+    };
+
+    checkLoggedIn();
+  }, [navigation]);
+
+  // 🔹 카카오 인가 코드로 실제 로그인 처리
+  const processLogin = async (code: string) => {
     try {
-      console.log('🟡 [Login] 카카오 로그인 플로우 시작');
-      const kakaoTokenRes = await startKakaoLogin();
-      console.log('🟢 [Login] 카카오 토큰 응답:', kakaoTokenRes);
-  
-      const kakaoAccessToken = kakaoTokenRes.access_token;
-      console.log('🟢 [Login] 카카오 access_token:', kakaoAccessToken);
-  
-      // 여기서 kakaoAccessToken을 백엔드에 보내서
-      // 우리 서비스용 accessToken/refreshToken 받으면 됨.
+      console.log('🟡 [Login] 인가 코드 수신, 토큰 교환 시작:', code);
+
+      // 1) 프론트에서 카카오 토큰 직접 발급
+      const tokenData = await getKakaoToken(code);
+      const kakaoAccessToken = tokenData.access_token;
+
+      if (!kakaoAccessToken) {
+        console.error('❌ [Login] 카카오 access_token 없음:', tokenData);
+        return;
+      }
+
+      console.log('🟢 [Login] 카카오 access_token 발급 완료:', kakaoAccessToken);
+
+      // 2) 우리 백엔드에 카카오 토큰 전달 → 서비스 로그인
+      const response = await api.post('/kakao/login', {
+        kakaoAccessKey: kakaoAccessToken, // 백엔드에서 기대하는 필드 이름에 맞춰야 함
+      });
+
+      console.log('🟢 [Login] 백엔드 로그인 응답:', response.data);
+
+      const accessToken = response.data.data?.accessToken;
+      if (!accessToken) {
+        console.error('❌ [Login] 우리 서비스 accessToken 없음:', response.data);
+        return;
+      }
+
+      // 3) 우리 서비스 토큰 저장 후 메인으로 이동
+      await saveAccessToken(accessToken);
+      console.log('🟢 [Login] 우리 서비스 토큰 저장 완료, MainTabs로 이동');
+      navigation.replace('MainTabs');
     } catch (err) {
-      console.log('🔴 [Login] 카카오 로그인 전체 오류:', err);
+      console.error('🔴 [Login] 전체 로그인 프로세스 실패:', err);
     }
   };
 
-  // 👆 스와이프로 넘기거나, 자동 스크롤 애니메이션이 끝났을 때
+  // 🔹 딥링크에서 code=... 감지
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      console.log('🟡 [Login] 딥링크 수신:', url);
+
+      if (!url) return;
+      const parts = url.split('?');
+      if (parts.length < 2) return;
+
+      const queryString = parts[1];
+      const params: Record<string, string> = {};
+
+      queryString.split('&').forEach(part => {
+        const [rawKey, rawValue] = part.split('=');
+        if (!rawKey) return;
+        const key = decodeURIComponent(rawKey);
+        const value = decodeURIComponent(rawValue ?? '');
+        params[key] = value;
+      });
+
+      console.log('🟡 [Login] 딥링크 파라미터:', params);
+
+      const code = params['code'];
+      if (code) {
+        console.log('🟢 [Login] 인가 코드 획득:', code);
+        processLogin(code);
+      }
+    };
+
+    // 실행 중에 들어오는 딥링크
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // 앱이 완전히 꺼진 상태에서 딥링크로 켜졌을 때 대비
+    (async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        handleDeepLink({ url: initialUrl });
+      }
+    })();
+
+    return () => {
+      subscription.remove();
+    };
+  }, [processLogin]);
+
+  // 🔘 카카오 로그인 버튼 처리: 카카오 로그인 화면만 띄우면 됨
+  const handleKakaoLogin = async () => {
+    try {
+      console.log('🟡 [Login] 카카오 로그인 플로우 시작');
+      await startKakaoLogin(); // 브라우저/카카오 앱으로 이동
+    } catch (err) {
+      console.log('🔴 [Login] 카카오 로그인 시작 오류:', err);
+    }
+  };
+
+  // 스와이프 끝났을 때 인덱스 업데이트
   const handleMomentumScrollEnd = (
     e: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
@@ -183,7 +265,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     borderRadius: 8,
-    overflow: 'hidden', // 이미지 모서리 둥글게 같이 잘리도록
+    overflow: 'hidden',
     marginBottom: 10,
     justifyContent: 'center',
     alignItems: 'center',

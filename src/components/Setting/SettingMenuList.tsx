@@ -13,6 +13,7 @@ type Props = {
   onPressReservation?: () => void;
   onPressAppSetting?: () => void;
   onPressNotification?: () => void;
+  onPressLogout?: () => void;   // ⬅ 추가!
 };
 
 const SettingMenuList: React.FC<Props> = ({
@@ -20,6 +21,7 @@ const SettingMenuList: React.FC<Props> = ({
   onPressReservation,
   onPressAppSetting,
   onPressNotification,
+  onPressLogout,   // ⬅ 추가
 }) => {
   return (
     <View style={styles.container}>
@@ -30,7 +32,6 @@ const SettingMenuList: React.FC<Props> = ({
         onPress={onPressFamily}
       >
         <View style={styles.rowLeft}>
-          {/* 👉 아이콘은 나중에 너가 원하는 이미지로 교체하면 돼 */}
           <Image
             source={require('../../assets/icons/family.png')}
             style={styles.rowIcon}
@@ -54,7 +55,6 @@ const SettingMenuList: React.FC<Props> = ({
         onPress={onPressReservation}
       >
         <Text style={styles.rowText}>예약 내역</Text>
-
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
@@ -68,7 +68,6 @@ const SettingMenuList: React.FC<Props> = ({
         onPress={onPressAppSetting}
       >
         <Text style={styles.rowText}>앱 설정</Text>
-
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
@@ -82,11 +81,21 @@ const SettingMenuList: React.FC<Props> = ({
         onPress={onPressNotification}
       >
         <Text style={styles.rowText}>알림 설정</Text>
-
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
         />
+      </TouchableOpacity>
+
+      {/* 🔻 여기에 로그아웃 추가 */}
+      <View style={styles.logoutSeparator} />
+
+      <TouchableOpacity
+        style={styles.logoutButton}
+        activeOpacity={0.8}
+        onPress={onPressLogout}
+      >
+        <Text style={styles.logoutText}>로그아웃</Text>
       </TouchableOpacity>
     </View>
   );
@@ -103,8 +112,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 24,
     paddingBottom: 24,
-    marginTop:30,
+    marginTop: 30,
   },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,5 +147,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     marginTop: 8,
     marginBottom: 12,
+  },
+
+  // 🔻 로그아웃 구분선
+  logoutSeparator: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+
+  logoutButton: {
+    paddingVertical: 12,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#EF4444', // 빨간색 로그아웃!
+    textAlign: 'left',
   },
 });
