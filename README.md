@@ -117,7 +117,9 @@ npm run android
 또는
 yarn android
 
-# Android 개발 환경 설정 (Android Setup)
+---
+
+## Android 개발 환경 설정 (Android Setup)
 
 이 프로젝트는 다음 환경에서 개발됨
 - Android SDK 36 (Android 15)
