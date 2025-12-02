@@ -87,28 +87,91 @@ src
 
 
 ---
+## Getting Started — Android
 
-## Getting Started
+프로젝트 실행 전 React Native 환경 설정(Node.js, JDK, Android Studio)이 완료해야함
 
-### 1. Install Dependencies
+### 1. 패키지 설치 (Install Dependencies)
+
+프로젝트 루트에서 의존성 패키지를 설치
+
+**npm 사용 시**
 npm install
-또는
+또는 **yarn 사용 시**
 yarn install
 
-### 2. iOS Setup (Mac 전용)
-cd ios
-pod install
-cd ..
+### 2. Metro 서버 실행 (Start Metro)
 
-### 3. Run Application
-**1) Metro 서버 실행**
+React Native 번들러(번들러 서버)를 실행
+
 npm start
+또는
+yarn start
 
-**2) Android 실행**
+### 3. 안드로이드 앱 실행 (Run Android)
+
+새 터미널에서 아래 명령을 실행
+(Android Emulator가 켜져 있거나 USB로 연결된 실제 기기가 필요)
+
 npm run android
+또는
+yarn android
 
-**3) iOS 실행**
-npm run ios
+# Android 개발 환경 설정 (Android Setup)
+
+이 프로젝트는 다음 환경에서 개발됨
+- Android SDK 36 (Android 15)
+- JDK 17 (Zulu OpenJDK 권장)
 
 ---
+
+필수 설정 가이드
+
+### 1. JDK 17 설치 및 버전 확인
+
+JDK 17 설치 후 아래 명령으로 버전을 확인: java -version
+
+### 2. Android Studio 설정
+- Android Studio 설치
+설치 후 SDK Manager로 이동: Android Studio → More Actions → SDK Manager
+
+**SDK Platforms 탭**
+
+아래 항목이 체크되어 있어야 함: Android 15.0 (VanillaIceCream) – API Level 36
+
+**SDK Tools 탭**
+
+아래 도구들이 설치되어 있어야 함:
+- Android SDK Build-Tools (36.0.0)
+- Android SDK Platform-Tools
+- Android Emulator
+- Android SDK Tools (Obsolete) — 필요 시 Show Package Details에서 확인
+모두 선택 후 Apply 클릭
+
+### 3. 환경 변수 설정 (Environment Variables)
+**macOS / Linux**
+~/.zshrc 또는 ~/.bash_profile에 다음을 추가:
+- export ANDROID_HOME=$HOME/Library/Android/sdk
+- export PATH=$PATH:$ANDROID_HOME/emulator
+- export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+등록 후: source ~/.zshrc
+
+**Windows**
+환경 변수 설정 방법:
+1. 제어판 → 시스템 및 보안 → 시스템
+2. 고급 시스템 설정 → 환경 변수
+3. 시스템 변수 추가
+- 이름: ANDROID_HOME
+- 값: C:\Users\사용자명\AppData\Local\Android\Sdk
+4. Path에 추가: %ANDROID_HOME%\platform-tools
+
+### 4️. 에뮬레이터 또는 기기 연결
+**Android Emulator 실행**
+Android Studio → Device Manager → Create Device
+→ API Level 36 이미지 선택 → 실행
+
+**실기기 연결**
+1. USB 연결
+2. 휴대폰 → 개발자 옵션 → USB 디버깅 활성화
 
