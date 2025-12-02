@@ -1,97 +1,118 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# TODAK Frontend
 
-# Getting Started
+병원 헬스케어 자동화 서비스 TODAK 의 모바일 애플리케이션(Android/iOS)입니다.
+STT 기반 진료 자동화, 건강 데이터 시각화, 병원 예약 등 모바일 환경에 특화된 기능을 제공합니다.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
+## 👤 Frontend Team
+동국대학교 컴퓨터공학전공 23학번 서예원
 
-## Step 1: Start Metro
+---
+## Features
+### 1. 로그인 & 인증
+   - 카카오 OAuth 기반 간편 로그인
+   - 딥링크 기반 인가 코드 처리 (todak://kakao-login)
+   - Access/Refresh Token 기반 자동 로그인
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### 2. 진료 녹음 & 업로드
+   - iOS/Android 마이크 권한 요청
+   - WAV 포맷(16bit, 44.1kHz)으로 고품질 녹음
+   - 녹음 파일 백엔드 업로드 → STT → 요약 자동 파이프라인 연동
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### 3. 병원 예약 & 일정 관리
+   - 병원/의사 리스트 조회
+   - 예약 가능한 시간대 선택 UI
+   - Monthly Calendar 기반 일정 확인
+   - 바텀시트로 예약 상세 내역 제공
 
-```sh
-# Using npm
+### 4. 건강 지표 모니터링
+   - 혈압/혈당/간수치 등 건강 데이터 조회
+   - SVG 기반 그래프 시각화 (Victory Native)
+   - AI 분석 코멘트 제공
+
+## Tech Stack
+- **Language:** TypeScript
+- **Framework:** React Native (CLI)
+- **State Management:** React Hooks, Context API
+- **Network:** Axios
+- **Chart:** Victory Native
+- 
+---
+
+## Architecture
+
+나중에 할거면..?
+
+---
+
+##  Project Structure
+
+bash
+src
+ ├─ api               # Axios 인스턴스 및 API 함수
+ ├─ assets            # 아이콘, 로고 등 정적 이미지
+ ├─ components        # 재사용 가능한 UI 요소
+ │   ├─ Calendar      # 캘린더 컴포넌트
+ │   ├─ Health        # 건강 지표 그래프/뷰
+ │   ├─ Home          # 메인 화면
+ │   ├─ Login         # 로그인 슬라이드 / 온보딩
+ │   ├─ Mycare        # 진료 기록 / 카테고리 탭
+ │   └─ Setting       # 설정 화면
+ ├─ navigation        # 네비게이션(Stack/Bottom Tab)
+ ├─ screens           # 주요 페이지(Login/Main/Health/Mycare 등)
+ └─ utils             # 카카오 로그인, AsyncStorage 관련 유틸
+
+ 
+---
+## Core Logic Flows
+
+### Authentication Flow
+1. 로그인 버튼 → 카카오 OAuth 인가 요청
+2. 인증 완료 후 딥링크(todak://kakao-login)로 인가 코드 수신
+3. 인가 코드 기반 Access/Refresh Token 발급
+4. 토큰 저장 후 자동 로그인 처리
+
+### Recording & Upload Flow
+1. 마이크 권한 요청
+2. 녹음 시작/종료 제어 (버튼 애니메이션 포함)
+3. 로컬 임시 저장 후 S3 업로드
+4. 백엔드에서 STT → 요약까지 자동 진행
+
+### Reservation Flow
+1. 병원 → 의사 → 시간대 선택
+2. 예약 요청
+3. 월별 캘린더에서 예약 내역 확인
+4. 날짜 클릭 시 상세 바텀시트 출력
+
+### Health Flow
+1. 서버에서 건강 데이터 조회
+2. Victory Native 그래프로 시각화
+3. 정상 범위 표시 + AI 코멘트 출력
+
+
+---
+
+## Getting Started
+
+### 1. Install Dependencies
+npm install
+또는
+yarn install
+
+### 2. iOS Setup (Mac 전용)
+cd ios
+pod install
+cd ..
+
+### 3. Run Application
+**1) Metro 서버 실행**
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+**2) Android 실행**
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+**3) iOS 실행**
 npm run ios
 
-# OR using Yarn
-yarn ios
-```
+---
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
