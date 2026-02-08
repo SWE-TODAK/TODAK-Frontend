@@ -10,6 +10,7 @@ import LocalLogin from '../screens/auth/LocalLogin';
 import LocalPassword from '../screens/auth/LocalPassword';
 import SignUpPassword from '../screens/auth/SignUpPassword';
 import SignUpName from '../screens/auth/SignUpName';
+import SignUpSex from '../screens/auth/SignUpSex';
 import ResetPasswordVerify from '../screens/auth/ResetPasswordVerify';
 import ResetPasswordNewPw from '../screens/auth/ResetPasswordNewPw';
 import ResetPasswordSuccess from '../screens/auth/ResetPasswordSuccess';
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   LocalPassword: { email: string };
   SignUpPassword: { email: string };
   SignUpName: { email: string };
+  SignUpSex: { email: string; name: string };
   ResetPasswordVerify: { email: string };
   ResetPasswordNewPw: { email: string; code: string };
   ResetPasswordSuccess: { email?: string };
@@ -60,6 +62,7 @@ const RootNavigator = () => {
         <Stack.Screen name="LocalPassword" component={LocalPassword} />
         <Stack.Screen name="SignUpPassword" component={SignUpPassword} />
         <Stack.Screen name="SignUpName" component={SignUpName} />
+        <Stack.Screen name="SignUpSex" component={SignUpSex} />
         <Stack.Screen name="ResetPasswordVerify" component={ResetPasswordVerify} />
         <Stack.Screen name="ResetPasswordNewPw" component={ResetPasswordNewPw} />
         <Stack.Screen name="ResetPasswordSuccess" component={ResetPasswordSuccess} />

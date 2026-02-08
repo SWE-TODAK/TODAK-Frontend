@@ -13,22 +13,19 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SignUpPassword'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'SignUpName'>;
 
-const isValidPassword = (v: string) => v.trim().length >= 6;
+// ✅ 이름 유효성(원하면 더 빡세게 가능)
+const isValidName = (v: string) => v.trim().length >= 1;
 
-export default function SignUpPassword({ navigation, route }: Props) {
+export default function SignUpName({ navigation, route }: Props) {
+  // ✅ 이전 화면에서 넘어온 email
   const email = route.params?.email ?? '';
-  const code = route.params?.code ?? '';
 
-  const [pw1, setPw1] = useState('');
-  const [pw2, setPw2] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
+  // ✅ name 입력값
+  const [name, setName] = useState('');
+  const [touched, setTouched] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -44,49 +41,15 @@ export default function SignUpPassword({ navigation, route }: Props) {
     };
   }, []);
 
-  const t1 = pw1.trim();
-  const t2 = pw2.trim();
+  const trimmed = name.trim();
+  const canContinue = useMemo(() => isValidName(trimmed), [trimmed]);
+  const showError = touched && trimmed.length === 0; // 비어있으면 에러
+  const showClear = trimmed.length > 0;
 
-  const pwOk = useMemo(() => isValidPassword(t1), [t1]);
-  const matchOk = useMemo(() => t1.length > 0 && t1 === t2, [t1, t2]);
-
-  const canContinue = pwOk && matchOk && !isSubmitting;
-
-  // 입력 변경 시 서버 에러 초기화
-  useEffect(() => {
-    if (error) setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t1, t2]);
-
-  const onContinue = async () => {
+  const onContinue = () => {
     if (!canContinue) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      // ✅ TODO: 서버 요청 (예: /auth/password/reset)
-      // await axios.post('/auth/password/reset', { email, code, newPassword: t1 });
-
-      // ---- MOCK ----
-      await new Promise((r) => setTimeout(r, 600));
-
-      navigation.navigate('SignUpName', { email });
-    } catch (e: any) {
-      setError('잠시 후 다시 시도해 주세요.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigation.navigate('SignUpSex', { email, name: trimmed });
   };
-
-  const showPw1Msg = t1.length > 0;
-  const showPw2Msg = t2.length > 0;
-
-  const showPw1Error = showPw1Msg && !pwOk;
-  const showPw1Success = showPw1Msg && pwOk;
-
-  const showPw2Error = showPw2Msg && pwOk && !matchOk;
-  const showPw2Success = showPw2Msg && pwOk && matchOk;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -112,24 +75,23 @@ export default function SignUpPassword({ navigation, route }: Props) {
             </View>
 
             <View style={styles.form}>
-              {/* 새 비밀번호 */}
-              <Text style={styles.sectionTitle}>비밀번호 입력</Text>
+              <Text style={styles.guideText}>이름을 입력해 주세요</Text>
 
               <View style={styles.inputRow}>
                 <TextInput
-                  value={pw1}
-                  onChangeText={setPw1}
-                  placeholder="6자리 이상 비밀번호를 입력해 주세요"
+                  value={name}
+                  onChangeText={setName}
+                  onBlur={() => setTouched(true)}
+                  placeholder="ex) 홍길동"
                   placeholderTextColor="rgba(60, 60, 67, 0.3)"
-                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
                   style={styles.input}
                 />
 
-                {!!t1 && (
+                {showClear && (
                   <TouchableOpacity
-                    onPress={() => setPw1('')}
+                    onPress={() => setName('')}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     style={styles.clearBtn}
                   >
@@ -144,58 +106,9 @@ export default function SignUpPassword({ navigation, route }: Props) {
 
               <View style={styles.underline} />
 
-              {/* ✅ input1 아래 메시지 */}
-              {showPw1Error && (
-                <Text style={styles.errorText}>6자리 이상 입력해주세요</Text>
+              {showError && (
+                <Text style={styles.errorText}>이름을 입력해 주세요</Text>
               )}
-              {showPw1Success && (
-                <Text style={styles.successText}>올바른 비밀번호입니다</Text>
-              )}
-
-              {/* 비밀번호 확인 */}
-              <Text style={[styles.sectionTitle, { marginTop: 34 }]}>
-                비밀번호 확인
-              </Text>
-
-              <View style={styles.inputRow}>
-                <TextInput
-                  value={pw2}
-                  onChangeText={setPw2}
-                  placeholder="비밀번호를 다시 입력해 주세요"
-                  placeholderTextColor="rgba(60, 60, 67, 0.3)"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  style={styles.input}
-                />
-
-                {!!t2 && (
-                  <TouchableOpacity
-                    onPress={() => setPw2('')}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={styles.clearBtn}
-                  >
-                    <Image
-                      source={require('../../assets/icons/Clear.png')}
-                      style={styles.clearImage}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.underline} />
-
-              {/* ✅ input2 아래 메시지 */}
-              {showPw2Error && (
-                <Text style={styles.errorText}>비밀번호가 다릅니다</Text>
-              )}
-              {showPw2Success && (
-                <Text style={styles.successText}>비밀번호가 일치합니다</Text>
-              )}
-
-              {/* 서버 에러는 아래 공통으로 유지 */}
-              {error && <Text style={styles.errorText}>{error}</Text>}
             </View>
 
             {/* 하단 버튼 */}
@@ -252,13 +165,12 @@ const styles = StyleSheet.create({
   backImage: { width: 20, height: 20 },
   title: { color: '#333333', fontSize: 17, fontWeight: '600' },
 
-  form: { marginTop: 80 },
-
-  sectionTitle: {
+  form: { marginTop: 100 },
+  guideText: {
     fontSize: 18,
     fontWeight: '700',
     color: '#000000',
-    marginBottom: 12,
+    marginBottom: 20,
   },
 
   inputRow: { flexDirection: 'row', alignItems: 'center' },
@@ -281,26 +193,22 @@ const styles = StyleSheet.create({
   clearImage: { width: 20, height: 20 },
 
   underline: {
-    height: 1,
+    height: 2,
     backgroundColor: '#E6E6E6',
-    marginTop: 10,
-  },
-
-  errorText: {
     marginTop: 8,
+  },
+  errorText: {
+    marginTop: 16,
     color: '#FF0000',
     fontSize: 12,
     fontWeight: '500',
   },
-  // ✅ 성공 메시지 추가 (스샷처럼 초록)
-  successText: {
-    marginTop: 8,
-    color: '#1E8E3E',
-    fontSize: 12,
-    fontWeight: '500',
-  },
 
-  bottomArea: { alignItems: 'center', paddingBottom: 50, marginTop: 'auto' },
+  bottomArea: {
+    alignItems: 'center',
+    paddingBottom: 50,
+    marginTop: 'auto',
+  },
   continueButton: {
     width: '100%',
     height: 52,
