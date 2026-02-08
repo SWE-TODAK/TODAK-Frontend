@@ -26,10 +26,10 @@ export type RootStackParamList = {
   MainTabs: undefined; 
   Reservation: undefined;
   Setting: undefined;
-  LocalLogin: undefined;
-  LocalPassword: undefined;
-  SignUpFlow: undefined;
-  ResetPasswordFlow: undefined;
+  LocalLogin: { email: string };
+  LocalPassword: { email: string };
+  SignUpFlow: { email: string };
+  ResetPasswordFlow: { email: string };
 
   // 🔥 설정 메뉴 관련 화면들 추가
   Family: undefined;

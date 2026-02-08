@@ -22,8 +22,9 @@ const isValidPassword = (v: string) => v.trim().length >= 6;
 export default function LocalLogin({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [touched, setTouched] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -43,11 +44,36 @@ export default function LocalLogin({ navigation }: Props) {
   const trimmed = password.trim();
   const canContinue = useMemo(() => isValidPassword(trimmed), [trimmed]);
   const showClear = trimmed.length > 0;
+  const onChangePassword = (v: string) => {
+    setPassword(v);
+    if (loginError) setLoginError(null);
+  };
 
-  const onContinue = () => {
-    if (!canContinue) return;
-    // ✅ 다음 스텝으로 연결 (일단 임시)
-    navigation.replace('MainTabs');
+  const onContinue = async () => {
+    if (!canContinue || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setLoginError(null);
+
+    try {
+      // ✅ TODO: 나중에 axios로 교체
+      // await axios.post('/auth/login', { email, password: trimmed });
+
+      // ---- MOCK 실패 예시 ----
+      await new Promise((r) => setTimeout(r, 600));
+      const ok = trimmed === '123456'; // 임시 성공 조건
+      if (!ok) {
+        throw new Error('INVALID_PASSWORD');
+      }
+
+      // ✅ 성공: MainTabs or MainScreen 이동
+      navigation.replace('MainTabs');
+    } catch (e: any) {
+      // 실패 UX
+      setLoginError('비밀번호가 올바르지 않아요');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,8 +104,7 @@ export default function LocalLogin({ navigation }: Props) {
               <View style={styles.inputRow}>
                 <TextInput
                   value={password}
-                  onChangeText={setPassword}
-                  onBlur={() => setTouched(true)}
+                  onChangeText={onChangePassword}
                   placeholder="6자리 이상 비밀번호를 입력해 주세요"
                   placeholderTextColor="rgba(60, 60, 67, 0.3)"
                   secureTextEntry={!showPassword}
@@ -123,6 +148,9 @@ export default function LocalLogin({ navigation }: Props) {
                   <Text style={styles.checkText}>비밀번호 보기</Text>
                 </TouchableOpacity>
               </View>
+              {loginError && (
+                <Text style={styles.errorText}>{loginError}</Text>
+              )}
             </View>
 
             {/* 하단 버튼 */}
@@ -232,6 +260,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6E6E6',
     marginTop: 8,
   },
+  errorText: {
+      marginTop: 16,
+      color: '#FF0000',
+      fontSize: 12,
+      fontWeight: '500',
+    },
   optionsRow: {
     marginTop: 16,
     alignItems: 'flex-start',
