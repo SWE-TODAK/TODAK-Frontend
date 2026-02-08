@@ -14,17 +14,19 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'LocalLogin'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'LocalPassword'>;
 
 const isValidPassword = (v: string) => v.trim().length >= 6;
 
-export default function LocalLogin({ navigation }: Props) {
+export default function LocalPassword({ navigation, route }: Props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [consentVisible, setConsentVisible] = useState(false);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -40,7 +42,7 @@ export default function LocalLogin({ navigation }: Props) {
       hideSub.remove();
     };
   }, []);
-
+  const email = route.params.email;
   const trimmed = password.trim();
   const canContinue = useMemo(() => isValidPassword(trimmed), [trimmed]);
   const showClear = trimmed.length > 0;
@@ -163,7 +165,9 @@ export default function LocalLogin({ navigation }: Props) {
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.findPwWrap}
-                onPress={() => navigation.navigate('ResetPasswordFlow')}
+                onPress={() => {
+                  setConsentVisible(true);
+                }}
               >
                 <Text style={styles.findPwText}>비밀번호 찾기</Text>
               </TouchableOpacity>
@@ -188,6 +192,17 @@ export default function LocalLogin({ navigation }: Props) {
           </View>
        </TouchableWithoutFeedback>
        </View>
+       <EmailAuthConsentModal
+                    visible={consentVisible}
+                    email={email}
+                    onCancel={() => {
+                        setConsentVisible(false);
+                    }}
+                    onConfirm={() => {
+                      setConsentVisible(false);
+                      navigation.navigate('ResetPasswordVerify', { email });
+                    }}
+                />
     </SafeAreaView>
   );
 }
