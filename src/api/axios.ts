@@ -3,7 +3,7 @@ import { getAccessToken } from '../utils/authStorage';
 
 const instance = axios.create({
   baseURL: 'https://todak-backend-705x.onrender.com',
-  timeout: 5000,
+  timeout: 200000,
 });
 
 // 🔥 모든 요청에 자동으로 토큰 붙이기

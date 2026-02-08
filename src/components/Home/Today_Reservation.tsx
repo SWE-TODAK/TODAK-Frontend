@@ -128,7 +128,7 @@ const Today_Reservation: React.FC = () => {
               <Text style={styles.department}>{department}</Text>
             </View>
 
-            <Hospital_Record />
+            <Hospital_Record appointmentId={reservation.appointmentId} />
           </View>
         </View>
       </View>

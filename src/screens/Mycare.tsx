@@ -36,19 +36,43 @@ type ConsultationDto = {
 const Health: React.FC = () => {
   const insets = useSafeAreaInsets();
 
-  const deptItems: DeptItem[] = useMemo(
-    () => [
-      { id: 'internal', label: '내과' },
-      { id: 'eye', label: '안과' },
-      { id: 'ent', label: '이비인후과' },
-    ],
-    [],
-  );
-
+  const [records, setRecords] = useState<MycareRecord[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string>('eye');
 
   // 🔹 전체 진료 기록 (API에서 받아온 뒤, MycareRecord로 변환해서 저장)
-  const [records, setRecords] = useState<MycareRecord[]>([]);
+
+  function extractPatientSummary(raw: string | null | undefined): string {
+    if (!raw) return '';
+  
+    try {
+      const parsed = JSON.parse(raw);
+      const summary = parsed?.patient_summary;
+      if (typeof summary === 'string') {
+        return summary;
+      }
+      // 예상했던 필드가 없으면 일단 원문 그대로 사용
+      return raw;
+    } catch (e) {
+      // JSON 파싱 실패하면 안전하게 원문 그대로
+      return raw;
+    }
+  }
+  
+
+  const dynamicDeptItems: DeptItem[] = useMemo(() => {
+    const uniqueDeptIds = Array.from(new Set(records.map(r => r.deptId)));
+  
+    const labelMap: Record<string, string> = {
+      internal: '내과',
+      eye: '안과',
+      ent: '이비인후과',
+    };
+  
+    return uniqueDeptIds.map(id => ({
+      id,
+      label: labelMap[id] || id,
+    }));
+  }, [records]);
 
   // 🔹 첫 진입 시 /consultations/my 호출
   useEffect(() => {
@@ -63,7 +87,7 @@ const Health: React.FC = () => {
           dateLabel: formatDateLabel(c.consultationTime),
           clinicName: c.hospitalName,
           doctorName: c.doctorName,
-          summary: c.summaryPreview,
+          summary: extractPatientSummary(c.summaryPreview),
           // prescription 은 아직 API에 없다고 가정 → 나중에 상세 API 나오면 교체
           prescription: '',
         }));
@@ -105,7 +129,7 @@ const Health: React.FC = () => {
       <View style={styles.content}>
         {/* 카테고리 탭 */}
         <DeptCategoryTabs
-          items={deptItems}
+          items={dynamicDeptItems}
           selectedId={selectedDeptId}
           onSelect={setSelectedDeptId}
         />
