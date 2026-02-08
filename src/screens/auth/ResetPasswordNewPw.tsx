@@ -52,7 +52,7 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
 
   const canContinue = pwOk && matchOk && !isSubmitting;
 
-  // 입력 변경 시 에러 초기화
+  // 입력 변경 시 서버 에러 초기화
   useEffect(() => {
     if (error) setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +71,6 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
       // ---- MOCK ----
       await new Promise((r) => setTimeout(r, 600));
 
-      // ✅ 성공 시: 로그인으로 보내거나, 비밀번호 변경 완료 화면으로
       navigation.replace('ResetPasswordSuccess', { email });
     } catch (e: any) {
       setError('비밀번호 변경에 실패했어요. 잠시 후 다시 시도해 주세요.');
@@ -79,6 +78,15 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
       setIsSubmitting(false);
     }
   };
+
+  const showPw1Msg = t1.length > 0;
+  const showPw2Msg = t2.length > 0;
+
+  const showPw1Error = showPw1Msg && !pwOk;
+  const showPw1Success = showPw1Msg && pwOk;
+
+  const showPw2Error = showPw2Msg && pwOk && !matchOk;
+  const showPw2Success = showPw2Msg && pwOk && matchOk;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -106,6 +114,7 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
             <View style={styles.form}>
               {/* 새 비밀번호 */}
               <Text style={styles.sectionTitle}>새로운 비밀번호 입력</Text>
+
               <View style={styles.inputRow}>
                 <TextInput
                   value={pw1}
@@ -132,12 +141,22 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
                   </TouchableOpacity>
                 )}
               </View>
+
               <View style={styles.underline} />
+
+              {/* ✅ input1 아래 메시지 */}
+              {showPw1Error && (
+                <Text style={styles.errorText}>6자리 이상 입력해주세요</Text>
+              )}
+              {showPw1Success && (
+                <Text style={styles.successText}>올바른 비밀번호입니다</Text>
+              )}
 
               {/* 비밀번호 확인 */}
               <Text style={[styles.sectionTitle, { marginTop: 34 }]}>
                 새로운 비밀번호 확인
               </Text>
+
               <View style={styles.inputRow}>
                 <TextInput
                   value={pw2}
@@ -164,15 +183,18 @@ export default function ResetPasswordNewPw({ navigation, route }: Props) {
                   </TouchableOpacity>
                 )}
               </View>
+
               <View style={styles.underline} />
 
-              {/* 에러 문구 (사진엔 없지만 필요하면 유지) */}
-              {t1.length > 0 && !pwOk && (
-                <Text style={styles.errorText}>비밀번호는 6자리 이상이어야 해요</Text>
+              {/* ✅ input2 아래 메시지 */}
+              {showPw2Error && (
+                <Text style={styles.errorText}>비밀번호가 다릅니다</Text>
               )}
-              {t2.length > 0 && pwOk && !matchOk && (
-                <Text style={styles.errorText}>비밀번호가 일치하지 않아요</Text>
+              {showPw2Success && (
+                <Text style={styles.successText}>비밀번호가 일치합니다</Text>
               )}
+
+              {/* 서버 에러는 아래 공통으로 유지 */}
               {error && <Text style={styles.errorText}>{error}</Text>}
             </View>
 
@@ -265,8 +287,15 @@ const styles = StyleSheet.create({
   },
 
   errorText: {
-    marginTop: 14,
+    marginTop: 8,
     color: '#FF0000',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  // ✅ 성공 메시지 추가 (스샷처럼 초록)
+  successText: {
+    marginTop: 8,
+    color: '#1E8E3E',
     fontSize: 12,
     fontWeight: '500',
   },
