@@ -116,12 +116,15 @@ const Record_Window: React.FC<RecordWindowProps> = ({
         datetime,
       };
 
-      console.log('📨 예약 요청 payload:', payload);
-
       const res = await api.post('/appointments', payload);
-      console.log('✅ 예약 생성 응답:', res.data);
+      console.log('✅ 예약 생성 응답 raw:', res.data);
 
-      onAppointmentCreated?.(res.data);
+      // 🔹 백엔드가 { status, message, data: {...} } 형태라고 가정
+      const created = (res.data && (res.data as any).data) || res.data;
+
+      console.log('✅ 예약 생성 응답 unwrapped:', created);
+
+onAppointmentCreated?.(created);   // 이제 created.appointmentId 로 쓸 수 있음
 
       const doctor = doctors.find(d => d.id === selectedDoctorId);
 
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   doctorTitle: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#6B7280',
   },
   confirmWrapper: {

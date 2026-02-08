@@ -61,6 +61,24 @@ const Calendar: React.FC = () => {
     return Array.from(set);
   }, [allConsultations]);
 
+  // 🔹 진료 내용 요약 JSON 문자열 → patient_summary만 꺼내기
+function extractPatientSummary(raw: string | null | undefined): string {
+  if (!raw) return '';
+
+  try {
+    const parsed = JSON.parse(raw);
+    const summary = parsed?.patient_summary;
+    if (typeof summary === 'string') {
+      return summary;
+    }
+    // 예상했던 필드가 없으면 일단 원문 그대로 사용
+    return raw;
+  } catch (e) {
+    // JSON 파싱 실패하면 안전하게 원문 그대로
+    return raw;
+  }
+}
+
   // 🔹 날짜 선택 시: 그 날짜의 진료 목록 조회 (/consultations/my/date)
   const handleSelectDate = async (date: Date) => {
     setSelectedDate(date);
@@ -78,7 +96,7 @@ const Calendar: React.FC = () => {
         clinicName: c.hospitalName,
         department: c.doctorName, // 혹시 나중에 department 있으면 여기 교체
         time: formatTime(c.consultationTime),
-        content: c.summaryPreview,
+        content: extractPatientSummary(c.summaryPreview),
       }));
 
       setAppointments(list);

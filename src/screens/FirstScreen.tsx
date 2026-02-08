@@ -27,7 +27,7 @@ const FirstScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerBox}>
           <Image
-            source={require('../assets/photo/토닥 로고.png')}
+            source={require('../assets/photo/todak_logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
