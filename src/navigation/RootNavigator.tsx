@@ -6,6 +6,10 @@ import { createStackNavigator } from '@react-navigation/stack';
 import FirstScreen from '../screens/FirstScreen';
 import Login from '../screens/Login';
 import AuthGate from '../screens/AuthGate';
+import LocalLogin from '../screens/auth/LocalLogin';
+import LocalPassword from '../screens/auth/LocalPassword';
+import SignUpFlow from '../screens/auth/SignUpFlow';
+import ResetPasswordFlow from '../screens/auth/ResetPasswordFlow';
 import Reservation from '../screens/Reservation';
 import MainTabNavigator from './MainTabNavigator';
 
@@ -22,6 +26,10 @@ export type RootStackParamList = {
   MainTabs: undefined; 
   Reservation: undefined;
   Setting: undefined;
+  LocalLogin: undefined;
+  LocalPassword: undefined;
+  SignUpFlow: undefined;
+  ResetPasswordFlow: undefined;
 
   // 🔥 설정 메뉴 관련 화면들 추가
   Family: undefined;
@@ -42,6 +50,10 @@ const RootNavigator = () => {
         <Stack.Screen name="AuthGate" component={AuthGate} />
         <Stack.Screen name="First" component={FirstScreen} />
         <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="LocalLogin" component={LocalLogin} />
+        <Stack.Screen name="LocalPassword" component={LocalPassword} />
+        <Stack.Screen name="SignUpFlow" component={SignUpFlow} />
+        <Stack.Screen name="ResetPasswordFlow" component={ResetPasswordFlow} />
 
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="Reservation" component={Reservation} />
