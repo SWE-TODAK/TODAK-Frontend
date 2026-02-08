@@ -48,7 +48,8 @@ export default function LocalLogin({ navigation }: Props) {
     if (!canContinue) return;
     // ✅ 다음 스텝으로 연결 (일단 임시)
     // 나중에 "비밀번호 입력 화면" 만들면 그 라우트로 바꾸면 됨.
-    navigation.navigate('LocalPassword', { email: trimmed }); // or navigation.navigate('ResetPasswordFlow') etc.
+    //navigation.navigate('LocalPassword', { email: trimmed });
+    navigation.navigate('SignUpPassword', { email: trimmed });
   };
 
   return (

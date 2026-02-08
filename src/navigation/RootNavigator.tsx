@@ -8,7 +8,8 @@ import Login from '../screens/Login';
 import AuthGate from '../screens/AuthGate';
 import LocalLogin from '../screens/auth/LocalLogin';
 import LocalPassword from '../screens/auth/LocalPassword';
-import SignUpFlow from '../screens/auth/SignUpFlow';
+import SignUpPassword from '../screens/auth/SignUpPassword';
+import SignUpName from '../screens/auth/SignUpName';
 import ResetPasswordVerify from '../screens/auth/ResetPasswordVerify';
 import ResetPasswordNewPw from '../screens/auth/ResetPasswordNewPw';
 import ResetPasswordSuccess from '../screens/auth/ResetPasswordSuccess';
@@ -30,7 +31,8 @@ export type RootStackParamList = {
   Setting: undefined;
   LocalLogin: { email: string };
   LocalPassword: { email: string };
-  SignUpFlow: { email: string };
+  SignUpPassword: { email: string };
+  SignUpName: { email: string };
   ResetPasswordVerify: { email: string };
   ResetPasswordNewPw: { email: string; code: string };
   ResetPasswordSuccess: { email?: string };
@@ -56,7 +58,8 @@ const RootNavigator = () => {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="LocalLogin" component={LocalLogin} />
         <Stack.Screen name="LocalPassword" component={LocalPassword} />
-        <Stack.Screen name="SignUpFlow" component={SignUpFlow} />
+        <Stack.Screen name="SignUpPassword" component={SignUpPassword} />
+        <Stack.Screen name="SignUpName" component={SignUpName} />
         <Stack.Screen name="ResetPasswordVerify" component={ResetPasswordVerify} />
         <Stack.Screen name="ResetPasswordNewPw" component={ResetPasswordNewPw} />
         <Stack.Screen name="ResetPasswordSuccess" component={ResetPasswordSuccess} />
