@@ -10,6 +10,7 @@ import LocalLogin from '../screens/auth/LocalLogin';
 import LocalPassword from '../screens/auth/LocalPassword';
 import SignUpFlow from '../screens/auth/SignUpFlow';
 import ResetPasswordVerify from '../screens/auth/ResetPasswordVerify';
+import ResetPasswordNewPw from '../screens/auth/ResetPasswordNewPw';
 import Reservation from '../screens/Reservation';
 import MainTabNavigator from './MainTabNavigator';
 
@@ -30,6 +31,7 @@ export type RootStackParamList = {
   LocalPassword: { email: string };
   SignUpFlow: { email: string };
   ResetPasswordVerify: { email: string };
+  ResetPasswordNewPw: { email: string; code: string };
 
   // 🔥 설정 메뉴 관련 화면들 추가
   Family: undefined;
@@ -54,7 +56,7 @@ const RootNavigator = () => {
         <Stack.Screen name="LocalPassword" component={LocalPassword} />
         <Stack.Screen name="SignUpFlow" component={SignUpFlow} />
         <Stack.Screen name="ResetPasswordVerify" component={ResetPasswordVerify} />
-
+        <Stack.Screen name="ResetPasswordNewPw" component={ResetPasswordNewPw} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="Reservation" component={Reservation} />
 
