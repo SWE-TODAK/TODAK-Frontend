@@ -19,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
-<<<<<<< HEAD
 import {
   saveAccessToken,
   saveRefreshToken,
