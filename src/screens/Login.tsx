@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
+<<<<<<< HEAD
 import {
   saveAccessToken,
   saveRefreshToken,
@@ -27,6 +28,11 @@ import {
 } from '../utils/authStorage';
 
 // ✅ 카카오 로그인 유틸 (start만 사용)
+=======
+import { saveAccessToken, saveRefreshToken, saveUser,getAccessToken } from '../utils/authStorage';
+
+// ✅ 카카오 로그인 유틸 (start + code→token 교환)
+>>>>>>> origin/main
 import { startKakaoLogin } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
@@ -127,12 +133,18 @@ const Login: React.FC = () => {
 
       const code = params['code'];
       const error = params['error'];
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
       if (error) {
         console.log('🔴 [Login] 카카오 인증 에러:', error, params);
         return;
       }
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
       if (code) {
         console.log('🟢 [Login] 인가 코드 획득:', code);
         processLogin(code);
@@ -222,7 +234,27 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
+<<<<<<< HEAD
         <TouchableOpacity onPress={() => navigation.replace('MainTabs')}>
+=======
+        <TouchableOpacity
+          style={styles.emailButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('LocalLogin')}
+        >
+          <Image
+            source={require('../assets/icons/email_login_large_wide.png')}
+            style={styles.emailImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            navigation.replace('MainTabs');
+          }}
+        >
+>>>>>>> origin/main
           <Text style={styles.adminLoginText}>병원 관리자 로그인</Text>
         </TouchableOpacity>
       </View>
@@ -264,7 +296,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+<<<<<<< HEAD
   kakaoImage: { width: '100%', height: '100%' },
+=======
+  kakaoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  emailButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 10, // 관리자 로그인 텍스트와 간격
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emailImage: {
+    width: '100%',
+    height: '100%',
+  },
+>>>>>>> origin/main
   adminLoginText: {
     fontSize: 12,
     color: '#777777',

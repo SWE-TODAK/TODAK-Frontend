@@ -10,7 +10,7 @@ export const KAKAO_REDIRECT_URI =
   'http://localhost:8080/login/oauth2/code/kakao';
 
 // ✅ 너희 백엔드 base url
-const BACKEND_BASE_URL = 'https://todak.com/api/v1';
+const BACKEND_BASE_URL = 'https://localhost:8080/api/v1';
 
 // ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
 const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';
