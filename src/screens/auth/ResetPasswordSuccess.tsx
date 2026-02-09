@@ -65,7 +65,7 @@ export default function ResetPasswordSuccess({ navigation, route }: Props) {
         {/* 본문 */}
         <View style={styles.body}>
           <Text style={styles.message}>
-            {email}님,{'\n'}
+            {displayName}님,{'\n'}
             비밀번호가 변경되었습니다!{'\n'}
             로그인 후 이용을 시작해 보세요
           </Text>
