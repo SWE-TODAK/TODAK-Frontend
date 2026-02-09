@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ACCESS_TOKEN_KEY = '@accessToken';
 const REFRESH_TOKEN_KEY = '@refreshToken';
+const USER_KEY = '@user';
 
 // ----------------------------
 // Access Token
@@ -34,9 +35,21 @@ export const clearRefreshToken = async () => {
   await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
-// ----------------------------
-// 전체 삭제
-// ----------------------------
+
+export const saveUser = async (user: any) => {
+  await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+};
+
+export const getUser = async () => {
+  const raw = await AsyncStorage.getItem(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+};
+
+export const clearUser = async () => {
+  await AsyncStorage.removeItem(USER_KEY);
+};
+
+// 전체 삭제에 user도 포함
 export const clearAllTokens = async () => {
-  await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY]);
+  await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
 };

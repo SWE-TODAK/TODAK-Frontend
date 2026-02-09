@@ -1,70 +1,107 @@
 // src/utils/kakaoAuth.ts
 import { Linking } from 'react-native';
+import { saveAccessToken, saveRefreshToken } from './authStorage';
 
-// 카카오 REST API 키
+// ✅ 카카오 REST API 키 (가능하면 env로 빼는 걸 추천)
 const REST_API_KEY = '837e7a48da1e70b2b5e40f82eeed27cd';
 
-// 인가코드를 받을 백엔드 콜백 주소
-// (카카오 콘솔 Redirect URI에도 이 값이 등록되어 있어야 함)
-const REDIRECT_URI =
+// ✅ 카카오 콘솔에 등록된 Redirect URI (그리고 authorize 요청에 사용한 값과 동일해야 함)
+export const KAKAO_REDIRECT_URI =
   'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
 
-export type KakaoTokenResponse = {
-  access_token: string;
-  refresh_token?: string;
-  token_type?: string;
-  expires_in?: number;
-  scope?: string;
-  [key: string]: any;
+// ✅ 너희 백엔드 base url
+const BACKEND_BASE_URL = 'https://todak-backend-705x.onrender.com';
+
+// ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
+const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';
+const KAKAO_SIGNUP_API_PATH = '/auth/kakao/signup';
+
+export type BackendAuthResponse = {
+  isNewUser: boolean;
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    userId: string;
+    email: string | null;
+    name: string;
+    birthDate: string | null;
+    gender: 'MALE' | 'FEMALE' | null;
+    profileImageUrl: string | null;
+    providers: string[];
+  };
+};
+
+export type Consent = {
+  consentType: 'TERMS' | 'PRIVACY';
+  agreed: boolean;
+  version: string; // 예: "v1.0"
+  source: 'SIGNUP';
 };
 
 /**
- * 1) 카카오 로그인 화면을 여는 함수
- *    - 여기서는 단순히 카카오 인증 URL을 오픈만 한다.
- *    - 인가코드는 REDIRECT_URI(백엔드)에서 받게 됨.
+ * 1) 카카오 로그인 화면 열기 (인가코드 받기용)
  */
 export const startKakaoLogin = () => {
   const kakaoAuthUrl =
     'https://kauth.kakao.com/oauth/authorize' +
     `?client_id=${REST_API_KEY}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}` +
     `&response_type=code`;
 
-  console.log('🟡 [kakaoAuth] 카카오 인증 URL:', kakaoAuthUrl);
   return Linking.openURL(kakaoAuthUrl);
 };
 
 /**
- * 2) 프론트에서 인가코드(code)를 받아왔을 때,
- *    카카오 토큰 엔드포인트에 직접 요청해서 access_token 을 교환하는 함수
+ * 2) (로그인) 백엔드에 authorizationCode + redirectUri 전달 → JWT 받기
  */
-export const getKakaoToken = async (
-  code: string,
-): Promise<KakaoTokenResponse> => {
-  console.log('🟡 [kakaoAuth] 토큰 교환용 인가 코드:', code);
-
-  const body =
-    `grant_type=authorization_code` +
-    `&client_id=${encodeURIComponent(REST_API_KEY)}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&code=${encodeURIComponent(code)}`;
-
-  const response = await fetch('https://kauth.kakao.com/oauth/token', {
+export const kakaoLoginToBackend = async (
+  authorizationCode: string,
+  redirectUri: string = KAKAO_REDIRECT_URI,
+): Promise<BackendAuthResponse> => {
+  const res = await fetch(`${BACKEND_BASE_URL}${KAKAO_LOGIN_API_PATH}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-    },
-    body,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ authorizationCode, redirectUri }),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.log('❌ [kakaoAuth] 토큰 요청 실패 status:', response.status);
-    console.log('❌ [kakaoAuth] 토큰 요청 실패 body:', text);
-    throw new Error('카카오 토큰 요청 실패');
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    // 백엔드가 내려주는 code/message를 그대로 찍어보면 디버깅이 쉬움
+    console.log('❌ [kakaoLoginToBackend] fail:', res.status, data);
+    throw new Error(data?.message ?? '카카오 로그인 실패');
   }
 
-  const json = (await response.json()) as KakaoTokenResponse;
-  console.log('🟢 [kakaoAuth] 카카오 토큰 응답:', json);
-  return json;
+  // ✅ 토큰 저장
+  await saveAccessToken(data.accessToken);
+  await saveRefreshToken(data.refreshToken);
+
+  return data;
+};
+
+/**
+ * 3) (회원가입) 백엔드에 authorizationCode + redirectUri + consents 전달 → JWT 받기
+ */
+export const kakaoSignupToBackend = async (
+  authorizationCode: string,
+  consents: Consent[],
+  redirectUri: string = KAKAO_REDIRECT_URI,
+): Promise<BackendAuthResponse> => {
+  const res = await fetch(`${BACKEND_BASE_URL}${KAKAO_SIGNUP_API_PATH}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ authorizationCode, redirectUri, consents }),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    console.log('❌ [kakaoSignupToBackend] fail:', res.status, data);
+    throw new Error(data?.message ?? '카카오 회원가입 실패');
+  }
+
+  await saveAccessToken(data.accessToken);
+  await saveRefreshToken(data.refreshToken);
+
+  return data;
 };
