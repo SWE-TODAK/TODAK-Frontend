@@ -74,7 +74,7 @@ const Hospital_Record: React.FC<Props> = () => {
 
     try {
       AudioRecord.init({
-        sampleRate: 44100,
+        sampleRate: 16000,
         channels: 1,
         bitsPerSample: 16,
         audioSource: 1,

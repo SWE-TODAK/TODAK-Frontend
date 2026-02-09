@@ -1,16 +1,16 @@
 // src/utils/kakaoAuth.ts
 import { Linking } from 'react-native';
-import { saveAccessToken, saveRefreshToken } from './authStorage';
+import { saveAccessToken, saveRefreshToken,saveUser} from './authStorage';
 
 // ✅ 카카오 REST API 키 (가능하면 env로 빼는 걸 추천)
-const REST_API_KEY = '837e7a48da1e70b2b5e40f82eeed27cd';
+const REST_API_KEY = '89015c2a864ed9dbb9f3e9e9f1c0bd92';
 
 // ✅ 카카오 콘솔에 등록된 Redirect URI (그리고 authorize 요청에 사용한 값과 동일해야 함)
 export const KAKAO_REDIRECT_URI =
-  'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
+  'http://localhost:8080/login/oauth2/code/kakao';
 
 // ✅ 너희 백엔드 base url
-const BACKEND_BASE_URL = 'https://todak-backend-705x.onrender.com';
+const BACKEND_BASE_URL = 'https://localhost:8080/api/v1';
 
 // ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
 const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';

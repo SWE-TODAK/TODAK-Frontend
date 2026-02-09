@@ -1,5 +1,5 @@
 // src/screens/Login.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,9 +19,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
+<<<<<<< HEAD
+import {
+  saveAccessToken,
+  saveRefreshToken,
+  saveUser,
+  getAccessToken, 
+} from '../utils/authStorage';
+
+// ✅ 카카오 로그인 유틸 (start만 사용)
+=======
 import { saveAccessToken, saveRefreshToken, saveUser,getAccessToken } from '../utils/authStorage';
 
 // ✅ 카카오 로그인 유틸 (start + code→token 교환)
+>>>>>>> origin/main
 import { startKakaoLogin } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
@@ -33,14 +44,18 @@ type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 const TOTAL_PAGES = 3;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// ✅ 렌더마다 바뀌지 않는 상수는 밖으로
+const REDIRECT_URI =
+  'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
+
 const Login: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView | null>(null);
   const currentIndexRef = useRef(0);
   const navigation = useNavigation<LoginNavProp>();
 
-   // ✅ 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
-   useEffect(() => {
+  // ✅ 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
+  useEffect(() => {
     const checkLoggedIn = async () => {
       try {
         const token = await getAccessToken();
@@ -55,40 +70,42 @@ const Login: React.FC = () => {
 
     checkLoggedIn();
   }, [navigation]);
-  
-  const REDIRECT_URI = 'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
 
+  // ✅ useCallback으로 고정 (딥링크 리스너 안정화)
+  const processLogin = useCallback(
+    async (code: string) => {
+      try {
+        console.log('🟡 [Login] authorizationCode 수신:', code);
 
-  // 🔹 카카오 인가 코드로 실제 로그인 처리
-  const processLogin = async (code: string) => {
-  try {
-    console.log('🟡 [Login] authorizationCode 수신:', code);
+        // ✅ 백엔드로 code 전달 (카카오 토큰 교환은 백이 함)
+        const res = await api.post('/auth/kakao/login', {
+          authorizationCode: code,
+          redirectUri: REDIRECT_URI,
+        });
 
-    // ✅ 백엔드로 code 전달 (카카오 토큰 교환은 백이 함)
-    const res = await api.post('/auth/kakao/login', {
-      authorizationCode: code,
-      redirectUri: REDIRECT_URI,
-    });
+        console.log('🟢 [Login] 백엔드 응답:', res.data);
 
-    console.log('🟢 [Login] 백엔드 응답:', res.data);
+        // ⚠️ 백 응답이 { data: { ... } } 형태면 여기 맞춰줘야 함
+        // 지금은 res.data가 바로 { accessToken, refreshToken, user } 라고 가정
+        const { accessToken, refreshToken, user } = res.data;
 
-    const { accessToken, refreshToken, user } = res.data;
+        if (!accessToken || !refreshToken) {
+          console.error('❌ [Login] 토큰 누락:', res.data);
+          return;
+        }
 
-    if (!accessToken || !refreshToken) {
-      console.error('❌ [Login] 토큰 누락:', res.data);
-      return;
-    }
+        await saveAccessToken(accessToken);
+        await saveRefreshToken(refreshToken);
+        if (user) await saveUser(user);
 
-    await saveAccessToken(accessToken);
-    await saveRefreshToken(refreshToken);
-    if (user) await saveUser(user);
-
-    console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
-    navigation.replace('MainTabs');
-  } catch (err) {
-    console.error('🔴 [Login] 로그인 실패:', err);
-  }
-};
+        console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
+        navigation.replace('MainTabs');
+      } catch (err) {
+        console.error('🔴 [Login] 로그인 실패:', err);
+      }
+    },
+    [navigation],
+  );
 
   // 🔹 딥링크에서 code=... 감지
   useEffect(() => {
@@ -116,20 +133,26 @@ const Login: React.FC = () => {
 
       const code = params['code'];
       const error = params['error'];
+<<<<<<< HEAD
+
+=======
+>>>>>>> origin/main
       if (error) {
         console.log('🔴 [Login] 카카오 인증 에러:', error, params);
         return;
       }
+<<<<<<< HEAD
+
+=======
+>>>>>>> origin/main
       if (code) {
         console.log('🟢 [Login] 인가 코드 획득:', code);
         processLogin(code);
       }
     };
 
-    // 실행 중에 들어오는 딥링크
     const subscription = Linking.addEventListener('url', handleDeepLink);
 
-    // 앱이 완전히 꺼진 상태에서 딥링크로 켜졌을 때 대비
     (async () => {
       const initialUrl = await Linking.getInitialURL();
       if (initialUrl) {
@@ -146,13 +169,12 @@ const Login: React.FC = () => {
   const handleKakaoLogin = async () => {
     try {
       console.log('🟡 [Login] 카카오 로그인 플로우 시작');
-      await startKakaoLogin(); // 브라우저/카카오 앱으로 이동
+      await startKakaoLogin();
     } catch (err) {
       console.log('🔴 [Login] 카카오 로그인 시작 오류:', err);
     }
   };
 
-  // 스와이프 끝났을 때 인덱스 업데이트
   const handleMomentumScrollEnd = (
     e: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
@@ -168,10 +190,7 @@ const Login: React.FC = () => {
       {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
         <View
           key={index}
-          style={[
-            styles.dot,
-            index === activeIndex && styles.dotActive,
-          ]}
+          style={[styles.dot, index === activeIndex && styles.dotActive]}
         />
       ))}
     </View>
@@ -179,7 +198,6 @@ const Login: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 🔼 인트로 영역 */}
       <View style={styles.topArea}>
         <ScrollView
           ref={scrollRef}
@@ -216,6 +234,9 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
+<<<<<<< HEAD
+        <TouchableOpacity onPress={() => navigation.replace('MainTabs')}>
+=======
         <TouchableOpacity
           style={styles.emailButton}
           activeOpacity={0.8}
@@ -233,6 +254,7 @@ const Login: React.FC = () => {
             navigation.replace('MainTabs');
           }}
         >
+>>>>>>> origin/main
           <Text style={styles.adminLoginText}>병원 관리자 로그인</Text>
         </TouchableOpacity>
       </View>
@@ -243,13 +265,8 @@ const Login: React.FC = () => {
 export default Login;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  topArea: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  topArea: { flex: 1 },
   introPage: {
     width: SCREEN_WIDTH,
     justifyContent: 'center',
@@ -261,10 +278,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 32,
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
+  dotsContainer: { flexDirection: 'row', marginBottom: 20 },
   dot: {
     width: 8,
     height: 8,
@@ -272,9 +286,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D3D3D3',
     marginHorizontal: 4,
   },
-  dotActive: {
-    backgroundColor: '#555555',
-  },
+  dotActive: { backgroundColor: '#555555' },
   kakaoButton: {
     width: '100%',
     height: 52,
@@ -284,6 +296,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+<<<<<<< HEAD
+  kakaoImage: { width: '100%', height: '100%' },
+=======
   kakaoImage: {
     width: '100%',
     height: '100%',
@@ -301,6 +316,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+>>>>>>> origin/main
   adminLoginText: {
     fontSize: 12,
     color: '#777777',
