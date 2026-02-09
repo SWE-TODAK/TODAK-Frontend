@@ -211,6 +211,18 @@ const Login: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={styles.emailButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('LocalLogin')}
+        >
+          <Image
+            source={require('../assets/icons/email_login_large_wide.png')}
+            style={styles.emailImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => {
             navigation.replace('MainTabs');
           }}
@@ -267,6 +279,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   kakaoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  emailButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 10, // 관리자 로그인 텍스트와 간격
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emailImage: {
     width: '100%',
     height: '100%',
   },
