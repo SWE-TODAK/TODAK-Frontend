@@ -36,7 +36,7 @@ import LoginIntro3 from '../components/Login/LoginIntro3';
 
 type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
-const TOTAL_PAGES = 3;
+const TOTAL_PAGES = 2;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ✅ 렌더마다 바뀌지 않는 상수는 밖으로
@@ -201,9 +201,6 @@ const Login: React.FC = () => {
           </View>
           <View style={styles.introPage}>
             <LoginIntro2 />
-          </View>
-          <View style={styles.introPage}>
-            <LoginIntro3 />
           </View>
         </ScrollView>
       </View>
