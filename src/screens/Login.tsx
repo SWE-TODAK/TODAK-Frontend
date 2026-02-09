@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
-import { saveAccessToken, getAccessToken } from '../utils/authStorage'; 
+import { saveAccessToken, saveRefreshToken, saveUser } from '../utils/authStorage';
 
 // ✅ 카카오 로그인 유틸 (start + code→token 교환)
 import { startKakaoLogin, getKakaoToken } from '../utils/kakaoAuth';
@@ -55,44 +55,40 @@ const Login: React.FC = () => {
 
     checkLoggedIn();
   }, [navigation]);
+  
+  const REDIRECT_URI = 'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
+
 
   // 🔹 카카오 인가 코드로 실제 로그인 처리
   const processLogin = async (code: string) => {
-    try {
-      console.log('🟡 [Login] 인가 코드 수신, 토큰 교환 시작:', code);
+  try {
+    console.log('🟡 [Login] authorizationCode 수신:', code);
 
-      // 1) 프론트에서 카카오 토큰 직접 발급
-      const tokenData = await getKakaoToken(code);
-      const kakaoAccessToken = tokenData.access_token;
+    // ✅ 백엔드로 code 전달 (카카오 토큰 교환은 백이 함)
+    const res = await api.post('/auth/kakao/login', {
+      authorizationCode: code,
+      redirectUri: REDIRECT_URI,
+    });
 
-      if (!kakaoAccessToken) {
-        console.error('❌ [Login] 카카오 access_token 없음:', tokenData);
-        return;
-      }
+    console.log('🟢 [Login] 백엔드 응답:', res.data);
 
-      console.log('🟢 [Login] 카카오 access_token 발급 완료:', kakaoAccessToken);
+    const { accessToken, refreshToken, user } = res.data;
 
-      // 2) 우리 백엔드에 카카오 토큰 전달 → 서비스 로그인
-      const response = await api.post('/kakao/login', {
-        kakaoAccessKey: kakaoAccessToken, // 백엔드에서 기대하는 필드 이름에 맞춰야 함
-      });
-
-      console.log('🟢 [Login] 백엔드 로그인 응답:', response.data);
-
-      const accessToken = response.data.data?.accessToken;
-      if (!accessToken) {
-        console.error('❌ [Login] 우리 서비스 accessToken 없음:', response.data);
-        return;
-      }
-
-      // 3) 우리 서비스 토큰 저장 후 메인으로 이동
-      await saveAccessToken(accessToken);
-      console.log('🟢 [Login] 우리 서비스 토큰 저장 완료, MainTabs로 이동');
-      navigation.replace('MainTabs');
-    } catch (err) {
-      console.error('🔴 [Login] 전체 로그인 프로세스 실패:', err);
+    if (!accessToken || !refreshToken) {
+      console.error('❌ [Login] 토큰 누락:', res.data);
+      return;
     }
-  };
+
+    await saveAccessToken(accessToken);
+    await saveRefreshToken(refreshToken);
+    if (user) await saveUser(user);
+
+    console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
+    navigation.replace('MainTabs');
+  } catch (err) {
+    console.error('🔴 [Login] 로그인 실패:', err);
+  }
+};
 
   // 🔹 딥링크에서 code=... 감지
   useEffect(() => {
