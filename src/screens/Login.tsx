@@ -19,10 +19,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
-import { saveAccessToken, saveRefreshToken, saveUser } from '../utils/authStorage';
+import { saveAccessToken, saveRefreshToken, saveUser,getAccessToken } from '../utils/authStorage';
 
 // ✅ 카카오 로그인 유틸 (start + code→token 교환)
-import { startKakaoLogin, getKakaoToken } from '../utils/kakaoAuth';
+import { startKakaoLogin } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
 import LoginIntro2 from '../components/Login/LoginIntro2';
@@ -97,10 +97,11 @@ const Login: React.FC = () => {
       console.log('🟡 [Login] 딥링크 수신:', url);
 
       if (!url) return;
-      const parts = url.split('?');
-      if (parts.length < 2) return;
 
-      const queryString = parts[1];
+      const qIndex = url.indexOf('?');
+      if (qIndex === -1) return;
+
+      const queryString = url.slice(qIndex + 1);
       const params: Record<string, string> = {};
 
       queryString.split('&').forEach(part => {
@@ -114,6 +115,11 @@ const Login: React.FC = () => {
       console.log('🟡 [Login] 딥링크 파라미터:', params);
 
       const code = params['code'];
+      const error = params['error'];
+      if (error) {
+        console.log('🔴 [Login] 카카오 인증 에러:', error, params);
+        return;
+      }
       if (code) {
         console.log('🟢 [Login] 인가 코드 획득:', code);
         processLogin(code);
