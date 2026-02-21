@@ -7,7 +7,7 @@ import MainScreen from '../screens/MainScreen';
 import Health from '../screens/Health';
 import Mycare from '../screens/Mycare'
 import Calendar from '../screens/Calendar'
-import Setting from '../screens/Setting';
+import SettingStackNavigator from './SettingStackNavigator';
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
 
@@ -111,7 +111,7 @@ const MainTabNavigator = () => {
   />
   <Tab.Screen
     name="Setting"
-    component={Setting}
+    component={SettingStackNavigator}
     options={{ tabBarLabel: '더보기' }}
   />
 </Tab.Navigator>

@@ -8,11 +8,11 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SettingMenuList from '../components/Setting/SettingMenuList';
-import { clearAllTokens } from '../utils/authStorage';
+import SettingMenuList from '../../components/Setting/SettingMenuList';
+import { clearAllTokens } from '../../utils/authStorage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/RootNavigator';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -38,7 +38,7 @@ const Setting: React.FC = () => {
             source={
               dummyUser.profileImage
                 ? { uri: dummyUser.profileImage }
-                : require('../assets/icons/profilePic-default.png')
+                : require('../../assets/icons/profilePic-default.png')
             }
             style={styles.avatarImage}
             resizeMode="cover"
@@ -72,13 +72,13 @@ const styles = StyleSheet.create({
     paddingTop: 36
   },
   avatar: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: 28,
     backgroundColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden', // 🔥 이게 핵심 (동그랗게 자름)
+    overflow: 'hidden',
   },
   avatarImage: {
     width: '100%',
