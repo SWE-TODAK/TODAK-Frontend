@@ -20,9 +20,9 @@ const Setting: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
 
-  // 🔹 지금은 더미 데이터
+  // 지금은 더미 데이터
   const dummyUser = {
-    name: '토닥 님',
+    name: '토닥',
     email: 'todak@example.com',
   };
 
@@ -31,45 +31,28 @@ const Setting: React.FC = () => {
       {/* 상태바 영역 */}
       <View style={{ height: insets.top, backgroundColor: 'rgba(236, 242, 252, 1)' }} />
 
-      {/* 상단 아이콘 영역 */}
-      <View style={styles.iconRow}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Image
-            source={require('../assets/icons/help.png')}
-            style={styles.iconImg}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconButton}>
-          <Image
-            source={require('../assets/icons/setting-circle.png')}
-            style={styles.iconImg}
-          />
-        </TouchableOpacity>
-      </View>
-
       {/* 프로필 영역 */}
       <View style={styles.profileRow}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>토</Text>
+          <Image
+            source={
+              dummyUser.profileImage
+                ? { uri: dummyUser.profileImage }
+                : require('../assets/icons/profilePic-default.png')
+            }
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
         </View>
 
-        <View style={styles.profileTextBox}>
-          <Text style={styles.profileName}>{dummyUser.name}</Text>
-          <Text style={styles.profileEmail}>이메일: {dummyUser.email}</Text>
-        </View>
+        <Text style={styles.profileName}>{dummyUser.name} 님</Text>
       </View>
 
       {/* 메뉴 리스트 */}
       <SettingMenuList
-        onPressFamily={() => navigation.navigate('Family')}
-        onPressReservation={() => navigation.navigate('ReservationHistory')}
-        onPressAppSetting={() => navigation.navigate('AppSetting')}
-        onPressNotification={() => navigation.navigate('NotificationSetting')}
-        onPressLogout={async () => {
-          await clearAllTokens();
-          navigation.replace('Login'); // 🔥 로그아웃 후 Login 이동
-        }}
+        onPressProfile={() => navigation.navigate('ProfileSetting' as any)}
+        onPressFeedback={() => navigation.navigate('Feedback' as any)}
+        onPressPrivacyHistory={() => navigation.navigate('PrivacyHistory' as any)}
       />
     </View>
   );
@@ -83,26 +66,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(236, 242, 252, 1)',
   },
 
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 27,
-    paddingTop: 12,
-    marginBottom: 24,
-  },
-  iconButton: {
-    marginLeft: 15,
-  },
-  iconImg: {
-    width: 22,
-    height: 22,
-    resizeMode: 'contain',
-  },
-
   profileRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 27,
+    paddingTop: 36
   },
   avatar: {
     width: 56,
@@ -111,23 +78,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    overflow: 'hidden', // 🔥 이게 핵심 (동그랗게 자름)
   },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#9CA3AF',
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
 
-  profileTextBox: { flex: 1 },
   profileName: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 13,
-    color: '#6B7280',
+    marginTop: 12,
   },
 });
