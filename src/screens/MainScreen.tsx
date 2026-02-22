@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import RecordPanel from '../components/Home/RecordPanel';
+import RecordPanel from '../components/Home/Record/RecordPanel';
+import RecentRecordsSection from '../components/Home/recentRecords/RecentRecordsSection';
 import { getUser } from '../utils/authStorage';
 
 const MainScreen: React.FC = () => {
@@ -15,6 +16,23 @@ const MainScreen: React.FC = () => {
     })();
   }, []);
 
+  const mockRecords = [
+  {
+    id: '1',
+    date: '2026.01.07',
+    description:
+      '이번 진료에서는 감기 초기 증상으로 판단되어 해열제와 감기약을 3일 처방했습니다.',
+  },
+  {
+    id: '2',
+    date: '2026.01.07',
+    description:
+      '이번 진료에서는 감기 초기 증상으로 판단되어 해열제와 감기약을 3일 처방했습니다.',
+  },
+];
+
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 상단 로고 */}
@@ -26,6 +44,8 @@ const MainScreen: React.FC = () => {
         />
         <Text style={styles.title}>토닥</Text>
       </View>
+
+      <RecentRecordsSection records={mockRecords} />
 
       {/* ✅ 탭바 바로 위에 "붙는" 녹음 패널 */}
       <View style={styles.recordDock}>
