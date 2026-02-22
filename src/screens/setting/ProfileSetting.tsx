@@ -1,20 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import Toast from '../../components/common/Toast';
 
 import {
   SafeAreaView,
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
   Image,
   Switch,
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); // 이메일 오류 판단 기준
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileSetting'>;
 
 export default function ProfileSetting({ navigation }: Props) {
@@ -33,6 +37,20 @@ export default function ProfileSetting({ navigation }: Props) {
   const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [withdrawVisible, setWithdrawVisible] = useState(false);
+  const [editing, setEditing] = useState<null | 'nickname' | 'email'>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [nicknameDraft, setNicknameDraft] = useState(user.nickname);
+  const [emailDraft, setEmailDraft] = useState(user.email);
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+
+    // 토스트가 "보였다가 사라질 시간"과 맞춰서 false로 내려주기
+    setTimeout(() => setToastVisible(false), 1400);
+  };
 
   const sexLabel = user.sex === 'F' ? '여성' : '남성';
 
@@ -44,12 +62,45 @@ export default function ProfileSetting({ navigation }: Props) {
     return `${y}년 ${m}월 ${d}일`;
   }, [user.birth]);
 
-  const onEditNickname = () => {
-    Alert.alert('닉네임 수정', '여기에 닉네임 수정 화면/모달 연결');
+  // TODO: API 연결 전 임시 "저장" 시점
+  const commitNickname = () => {
+    // 여기서 nicknameDraft 서버 저장 붙이면 됨
+    endEdit();
+    showToast('저장됐어요');
+  };
+  const startEditNickname = () => {
+    setEditing('nickname');
   };
 
-  const onEditEmail = () => {
-    Alert.alert('이메일 수정', '여기에 이메일 수정 화면/모달 연결');
+  const startEditEmail = () => {
+    setEmailError(null);
+    setEditing('email');
+  };
+
+  const endEdit = () => setEditing(null);
+
+  const commitEmail = () => {
+    const v = emailDraft.trim();
+
+    if (!isValidEmail(v)) {
+      setEmailError('올바른 이메일을 입력해주세요');
+      setEditing('email'); // 계속 편집 상태 유지
+      return;
+    }
+
+    setEmailError(null);
+    // TODO: v 저장 API
+    endEdit();
+    showToast('저장됐어요');
+  };
+
+  const onChangeEmailDraft = (v: string) => {
+    setEmailDraft(v);
+
+    // 에러가 떠있는 상태라면 입력 시작하면 지워주기
+    if (emailError) {
+      setEmailError(null);
+    }
   };
 
   const onEditBirth = () => {
@@ -77,6 +128,14 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   return (
+    <TouchableWithoutFeedback
+      onPress={() => {
+          Keyboard.dismiss();     // 키보드 내림
+          if (editing === 'nickname') commitNickname();
+          if (editing === 'email') commitEmail();
+      }}
+      accessible={false}
+    >
     <SafeAreaView style={styles.safe}>
       <View style={[styles.container]}>
         {/* 헤더 */}
@@ -126,8 +185,28 @@ export default function ProfileSetting({ navigation }: Props) {
 
         {/* 정보 리스트 */}
         <View style={styles.infoList}>
-          <InfoRow label="닉네임" value={user.nickname} onPressEdit={onEditNickname} />
-          <InfoRow label="이메일" value={user.email} onPressEdit={onEditEmail} />
+          <InfoRow
+            label="이름"
+            value={nicknameDraft}
+            editable
+            isEditing={editing === 'nickname'}
+            onStartEdit={startEditNickname}
+            onChangeText={setNicknameDraft}
+            onClear={() => setNicknameDraft('')}
+            onSubmit={commitNickname}
+          />
+          <InfoRow
+            label="이메일"
+            value={emailDraft}
+            editable
+            isEditing={editing === 'email'}
+            onStartEdit={startEditEmail}
+            onChangeText={onChangeEmailDraft}   // ✅ 이 함수 사용
+            onClear={() => setEmailDraft('')}
+            onSubmit={commitEmail}
+            keyboardType="email-address"
+            errorText={emailError}
+          />
           <InfoRow label="생년월일" value={birthLabel} onPressEdit={onEditBirth} />
           <InfoRow label="성별" value={sexLabel} onPressEdit={onEditSex} />
 
@@ -218,43 +297,102 @@ export default function ProfileSetting({ navigation }: Props) {
                 navigation.replace('Login');
               }}
             />
+          <Toast visible={toastVisible} message={toastMessage} />
     </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
 /** -----------------------------
  * 작은 컴포넌트: label + value + 연필버튼
  * ------------------------------ */
+
 function InfoRow({
   label,
   value,
+  editable = false,
+  isEditing = false,
+  onStartEdit,
+  onChangeText,
+  onClear,
+  onSubmit,
+  keyboardType,
   onPressEdit,
+  errorText,
 }: {
   label: string;
   value: string;
-  onPressEdit: () => void;
+  editable?: boolean;
+  isEditing?: boolean;
+  onStartEdit?: () => void;
+  onChangeText?: (v: string) => void;
+  onClear?: () => void;
+  onSubmit?: () => void;
+  keyboardType?: 'default' | 'email-address';
+  onPressEdit?: () => void;
+  errorText?: string | null;
 }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-
-      <View style={styles.rowRight}>
-        <Text style={styles.rowValue} numberOfLines={1}>
-          {value}
+    <View style={styles.rowBlock}>
+      <View style={styles.row}>
+        <Text style={styles.rowLabel} numberOfLines={1}>
+          {label}
         </Text>
 
-        <TouchableOpacity
-          onPress={onPressEdit}
-          activeOpacity={0.8}
-          style={styles.editBtn}
-        >
-          <Image
-            source={require('../../assets/icons/edit.png')}
-            style={styles.editIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+        <View style={styles.rowRight}>
+          {editable && isEditing ? (
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={value}
+                onChangeText={onChangeText}
+                style={styles.inlineInput}
+                autoFocus
+                keyboardType={keyboardType ?? 'default'}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={onSubmit} // ✅ Enter -> 저장
+                onBlur={onSubmit}          // ✅ blur -> 저장
+              />
+
+              <TouchableOpacity
+                onPress={onClear}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.clearBtn}
+              >
+                <Image
+                  source={require('../../assets/icons/Clear.png')}
+                  style={styles.clearIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.rowValue} numberOfLines={1}>
+                {value}
+              </Text>
+
+              <TouchableOpacity
+                onPress={editable ? onStartEdit : onPressEdit}
+                activeOpacity={0.8}
+                style={styles.editBtn}
+              >
+                <Image
+                  source={require('../../assets/icons/edit.png')}
+                  style={styles.editIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
+
+      {/* ✅ 이메일 형식 에러 메시지 */}
+      {!!errorText && <Text style={styles.inlineErrorText}>{errorText}</Text>}
     </View>
   );
 }
@@ -362,6 +500,18 @@ const styles = StyleSheet.create({
     maxWidth: 220,
     textAlign: 'left',
   },
+  rowBlock: {
+    // 한 row + 에러텍스트를 묶는 wrapper
+  },
+  inlineErrorText: {
+    marginTop: 6,
+    color: '#FF0000',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'right',
+    paddingLeft: '50%',  // 필요하면 label 폭만큼 띄우고 싶으면 여기 조절
+  },
+
   editBtn: {
     width: 15,
     height: 15,
@@ -369,6 +519,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editIcon: { width: 18, height: 18 },
+
+  inputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  inlineInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '500',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    textAlign: 'left',
+  },
+
+  clearBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#D1D5DB', // 스샷처럼 회색 동그라미 느낌
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+
+  clearIcon: {
+    width: 12,
+    height: 12,
+    tintColor: '#FFFFFF',
+  },
 
   menuRow: {
     flexDirection: 'row',
