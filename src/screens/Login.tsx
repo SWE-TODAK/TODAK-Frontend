@@ -27,7 +27,7 @@ import {
   getAccessToken, 
 } from '../utils/authStorage';
 
-// ✅ 카카오 로그인 유틸 (start + code→token 교환)
+// ✅ 카카오 로그인 유틸 (start만 사용)
 import { startKakaoLogin } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
