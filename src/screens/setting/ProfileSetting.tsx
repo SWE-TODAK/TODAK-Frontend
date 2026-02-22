@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 import {
   SafeAreaView,
   View,
@@ -26,6 +27,8 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const [kakaoEasyLogin, setKakaoEasyLogin] = useState(true);
+
+  const [consentVisible, setConsentVisible] = useState(false);
 
   const sexLabel = user.sex === 'F' ? '여성' : '남성';
 
@@ -58,12 +61,7 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onPressChangePassword = () => {
-    /*
-    navigation.navigate('ResetPasswordVerify', {
-      email: user.email,
-    });
-    */
-    Alert.alert('비밀번호 변경', '여기에 비밀번호 변경 화면 연결');
+    setConsentVisible(true);
   };
 
   const onPressLogout = () => {
@@ -184,6 +182,18 @@ export default function ProfileSetting({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+      <EmailAuthConsentModal
+        visible={consentVisible}
+        email={user.email}
+        onCancel={() => setConsentVisible(false)}
+        onConfirm={() => {
+            setConsentVisible(false);
+            navigation.navigate('ResetPasswordVerify', {
+                email: user.email,
+                returnTo: 'ProfileSetting',
+            } as any);
+        }}
+      />
     </SafeAreaView>
   );
 }
