@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, Platform } from 'react';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Toast from '../../components/common/Toast';
@@ -42,6 +43,9 @@ export default function ProfileSetting({ navigation }: Props) {
   const [nicknameDraft, setNicknameDraft] = useState(user.nickname);
   const [emailDraft, setEmailDraft] = useState(user.email);
 
+  const [birthDraft, setBirthDraft] = useState(user.birth); // "YYYY-MM-DD"
+  const [birthPickerVisible, setBirthPickerVisible] = useState(false);
+
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const showToast = (msg: string) => {
@@ -55,12 +59,11 @@ export default function ProfileSetting({ navigation }: Props) {
   const sexLabel = user.sex === 'F' ? '여성' : '남성';
 
   const birthLabel = useMemo(() => {
-    // "2004년 6월 12일" 형태
-    if (!user.birth) return '';
-    const [y, m, d] = user.birth.split('-').map((x) => Number(x));
-    if (!y || !m || !d) return user.birth;
+    if (!birthDraft) return '';
+    const [y, m, d] = birthDraft.split('-').map((x) => Number(x));
+    if (!y || !m || !d) return birthDraft;
     return `${y}년 ${m}월 ${d}일`;
-  }, [user.birth]);
+  }, [birthDraft]);
 
   // TODO: API 연결 전 임시 "저장" 시점
   const commitNickname = () => {
@@ -104,7 +107,11 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onEditBirth = () => {
-    Alert.alert('생년월일 수정', '여기에 생년월일 수정 화면/모달 연결');
+    // 인라인 편집 중이면 저장/종료부터
+    if (editing === 'nickname') commitNickname();
+    if (editing === 'email') commitEmail();
+
+    setBirthPickerVisible(true);
   };
 
   const onEditSex = () => {
@@ -130,6 +137,7 @@ export default function ProfileSetting({ navigation }: Props) {
   return (
     <TouchableWithoutFeedback
       onPress={() => {
+          if (birthPickerVisible) return;
           Keyboard.dismiss();     // 키보드 내림
           if (editing === 'nickname') commitNickname();
           if (editing === 'email') commitEmail();
@@ -298,6 +306,29 @@ export default function ProfileSetting({ navigation }: Props) {
               }}
             />
           <Toast visible={toastVisible} message={toastMessage} />
+          {birthPickerVisible && (
+            <DateTimePicker
+              value={toDate(birthDraft)}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
+                // Android는 선택/취소 후 onChange가 호출되고, 여기서 닫아줘야 함
+                setBirthPickerVisible(false);
+
+                if (event.type === 'dismissed') return;
+                if (!selectedDate) return;
+
+                const next = toYMD(selectedDate);
+
+                if (next !== birthDraft) {
+                  setBirthDraft(next);
+                  showToast('저장됐어요');
+                  // TODO: 서버 저장 API 붙일 자리
+                }
+              }}
+            />
+          )}
     </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -395,6 +426,22 @@ function InfoRow({
       {!!errorText && <Text style={styles.inlineErrorText}>{errorText}</Text>}
     </View>
   );
+}
+
+function toDate(ymd: string) {
+  // ymd가 비정상이어도 안전한 기본값 사용
+  const parts = (ymd || '').split('-').map(Number);
+  const y = parts[0] || 2000;
+  const m = (parts[1] || 1) - 1;
+  const d = parts[2] || 1;
+  return new Date(y, m, d);
+}
+
+function toYMD(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 const styles = StyleSheet.create({
@@ -509,7 +556,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     textAlign: 'right',
-    paddingLeft: '50%',  // 필요하면 label 폭만큼 띄우고 싶으면 여기 조절
   },
 
   editBtn: {
