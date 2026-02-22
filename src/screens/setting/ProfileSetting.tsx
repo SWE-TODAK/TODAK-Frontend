@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
+
 import {
   SafeAreaView,
   View,
@@ -29,6 +31,8 @@ export default function ProfileSetting({ navigation }: Props) {
   const [kakaoEasyLogin, setKakaoEasyLogin] = useState(true);
 
   const [consentVisible, setConsentVisible] = useState(false);
+  const [logoutVisible, setLogoutVisible] = useState(false);
+  const [withdrawVisible, setWithdrawVisible] = useState(false);
 
   const sexLabel = user.sex === 'F' ? '여성' : '남성';
 
@@ -65,24 +69,11 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onPressLogout = () => {
-    Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '확인',
-        style: 'destructive',
-        onPress: () => {
-          // TODO: 토큰 삭제 + Login으로 이동
-          navigation.replace('Login');
-        },
-      },
-    ]);
+    setLogoutVisible(true);
   };
 
   const onPressWithdraw = () => {
-    Alert.alert('회원탈퇴', '정말 탈퇴하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { text: '확인', style: 'destructive', onPress: () => {} },
-    ]);
+    setWithdrawVisible(true);
   };
 
   return (
@@ -182,18 +173,51 @@ export default function ProfileSetting({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </View>
-      <EmailAuthConsentModal
-        visible={consentVisible}
-        email={user.email}
-        onCancel={() => setConsentVisible(false)}
-        onConfirm={() => {
-            setConsentVisible(false);
-            navigation.navigate('ResetPasswordVerify', {
-                email: user.email,
-                returnTo: 'ProfileSetting',
-            } as any);
-        }}
-      />
+            {/* 비밀번호 변경 동의 모달 */}
+            <EmailAuthConsentModal
+              visible={consentVisible}
+              email={user.email}
+              onCancel={() => setConsentVisible(false)}
+              onConfirm={() => {
+                setConsentVisible(false);
+                navigation.navigate('ResetPasswordVerify', {
+                  email: user.email,
+                  returnTo: 'ProfileSetting',
+                  skipSuccess: true,
+                } as any);
+              }}
+            />
+
+            {/* 로그아웃 모달 */}
+            <ConfirmModal
+              visible={logoutVisible}
+              title="로그아웃"
+              message="로그아웃 하시겠습니까?"
+              cancelText="취소"
+              confirmText="확인"
+              confirmColor="#EF4444"
+              onCancel={() => setLogoutVisible(false)}
+              onConfirm={() => {
+                setLogoutVisible(false);
+                navigation.replace('Login');
+              }}
+            />
+
+            {/* 회원탈퇴 모달 */}
+            <ConfirmModal
+              visible={withdrawVisible}
+              title="회원탈퇴"
+              message="정말 탈퇴하시겠습니까?"
+              cancelText="취소"
+              confirmText="확인"
+              confirmColor="#EF4444"
+              onCancel={() => setWithdrawVisible(false)}
+              onConfirm={() => {
+                setWithdrawVisible(false);
+                // TODO: 탈퇴 API 호출 후 처리
+                navigation.replace('Login');
+              }}
+            />
     </SafeAreaView>
   );
 }
