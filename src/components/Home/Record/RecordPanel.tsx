@@ -12,6 +12,11 @@ const RecordPanel: React.FC = () => {
 
   const [isRecording, setIsRecording] = useState(false);
 
+  const [recordInfo, setRecordInfo] = useState({
+    dateText: '',
+    durationText: '',
+  });
+
   // ✅ 동의/완료 모달 제어
   const [showConsent, setShowConsent] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
@@ -46,9 +51,16 @@ const RecordPanel: React.FC = () => {
   };
 
   // ✅ 녹음 stop 되었을 때 -> CompleteModal 띄우기
-  const handleStopped = (path: string | null) => {
-    // 저장 경로 alert는 이제 필요 없으니 여기서 처리하면 됨
-    // console.log('record saved:', path);
+  const handleStopped = (data: {
+    path: string | null;
+    durationText: string;
+    dateText: string;
+  }) => {
+    setRecordInfo({
+      dateText: data.dateText,
+      durationText: data.durationText,
+    });
+
     setShowComplete(true);
   };
 
@@ -73,7 +85,7 @@ const RecordPanel: React.FC = () => {
           ref={recordRef}
           onRecordingChange={setIsRecording}
           onTap={handleTapRecord}
-          disabled={!hasConsent && !isRecording} // ✅ 녹음 시작만 막고, 녹음 중 stop은 가능
+          disabled={!hasConsent && !isRecording}
           onStopped={handleStopped}
         />
       </View>
@@ -88,6 +100,8 @@ const RecordPanel: React.FC = () => {
       {/* ✅ 녹음 완료 모달 */}
       <CompleteModal
         visible={showComplete}
+        dateText={recordInfo.dateText}
+        durationText={recordInfo.durationText}
         onSubmit={handleSubmitComplete}
       />
     </View>

@@ -48,7 +48,11 @@ type Props = {
   disabled?: boolean;
 
   // ✅ stop 후 파일 경로를 부모에게 알려줌 (CompleteModal 띄우기)
-  onStopped?: (path: string | null) => void;
+  onStopped?: (data: {
+  path: string | null;
+  durationText: string;
+  dateText: string;
+}) => void;
 };
 
 // ✅ 부모가 start/stop을 직접 호출할 수 있도록 ref로 노출
@@ -74,6 +78,7 @@ const RecordButton = forwardRef<RecordButtonHandle, Props>(
         return;
       }
 
+
       const loop = Animated.loop(
         Animated.sequence([
           Animated.timing(scale, {
@@ -93,31 +98,67 @@ const RecordButton = forwardRef<RecordButtonHandle, Props>(
       return () => loop.stop();
     }, [isRecording, scale]);
 
+    const startTimeRef = useRef<number | null>(null);
+
     const startRecording = async () => {
-      const hasPermission = await requestMicPermission();
-      if (!hasPermission) {
-        Alert.alert('권한 필요', '마이크 사용 권한을 허용해주세요.');
-        return;
-      }
+    const hasPermission = await requestMicPermission();
+    if (!hasPermission) {
+      Alert.alert('권한 필요', '마이크 사용 권한을 허용해주세요.');
+      return;
+    }
 
-      const filename = `record_${getTimeString()}.wav`;
+    const filename = `record_${getTimeString()}.wav`;
 
-      AudioRecord.init({
-        sampleRate: 16000,
-        channels: 1,
-        bitsPerSample: 16,
-        audioSource: 1,
-        wavFile: filename,
-      });
+    AudioRecord.init({
+      sampleRate: 16000,
+      channels: 1,
+      bitsPerSample: 16,
+      audioSource: 1,
+      wavFile: filename,
+    });
 
-      await AudioRecord.start();
-      setIsRecording(true);
-    };
+    await AudioRecord.start();
+
+    startTimeRef.current = Date.now();   // ✅ 시작 시간 기록
+    setIsRecording(true);
+  };
 
     const stopRecording = async () => {
       const path = await AudioRecord.stop();
       setIsRecording(false);
-      onStopped?.(path || null); // ✅ 부모에게 알림
+
+      const endTime = Date.now();
+      const startTime = startTimeRef.current;
+
+      let durationText = '';
+      let dateText = '';
+
+      if (startTime) {
+        const diffMs = endTime - startTime;
+        const totalSeconds = Math.floor(diffMs / 1000);
+
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        durationText = `${minutes}분 ${seconds}초`;
+      }
+
+      // 오늘 날짜 만들기
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+
+      const weekday = ['일', '월', '화', '수', '목', '금', '토'];
+      const day = weekday[now.getDay()];
+
+      dateText = `${yyyy}.${mm}.${dd}.${day}`;
+
+      onStopped?.({
+        path: path || null,
+        durationText,
+        dateText,
+      });
     };
 
     const toggle = async () => {

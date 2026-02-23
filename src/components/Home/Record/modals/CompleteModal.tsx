@@ -30,8 +30,8 @@ type Props = {
 
 const CompleteModal: React.FC<Props> = ({
   visible,
-  dateText = '2026.01.21.화',
-  durationText = '2분 34초',
+  dateText,
+  durationText,
   onSubmit,
 }) => {
   const [hospital, setHospital] = useState('');
@@ -62,7 +62,7 @@ const CompleteModal: React.FC<Props> = ({
       disease: disease.trim() || undefined,
       doctor: doctor.trim() || undefined,
       department: department.trim() || undefined,
-      title: title.trim() || undefined,
+      title: title?.trim() || undefined,
     });
   };
 
@@ -73,8 +73,6 @@ const CompleteModal: React.FC<Props> = ({
       animationType="fade"
       statusBarTranslucent
       onRequestClose={() => {
-        // ✅ Android back 버튼으로 닫히지 않게 (무조건 완료)
-        // 여기서 아무것도 안 하면 됨.
       }}
     >
       <KeyboardAvoidingView
@@ -84,8 +82,8 @@ const CompleteModal: React.FC<Props> = ({
         <View style={styles.card}>
           <Text style={styles.headerBlue}>진료 녹음이 완료되었어요</Text>
 
-          <Text style={styles.date}>{dateText}</Text>
-          <Text style={styles.duration}>{durationText}</Text>
+          <Text style={styles.date}>{dateText ?? ''}</Text>
+          <Text style={styles.duration}>{durationText ?? ''}</Text>
 
           <Text style={styles.helper}>진료 정보를 입력해주세요!</Text>
 
@@ -171,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
   },
 
   card: {
@@ -204,7 +202,7 @@ const styles = StyleSheet.create({
     color: '#111',
   },
   helper: {
-    marginTop: 16,
+    marginTop: 6,
     textAlign: 'center',
     fontSize: 13,
     color: '#B5BED5',
@@ -242,7 +240,7 @@ const styles = StyleSheet.create({
   },
 
   labelRight: {
-    marginLeft: 18,
+    marginLeft: 16,
     width: 48,
     fontSize: 16,
     fontWeight: '800',
