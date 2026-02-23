@@ -19,6 +19,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); // 이메일 오류 판단 기준
@@ -53,6 +54,10 @@ export default function ProfileSetting({ navigation }: Props) {
 
   const [sexDraft, setSexDraft] = useState<'M' | 'F'>(user.sex);
   const [sexModalVisible, setSexModalVisible] = useState(false);
+
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(
+    user.profileImageUrl || null
+  );
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -144,7 +149,41 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onEditProfileImage = () => {
-    Alert.alert('프로필 사진 수정', '여기에 이미지 선택/업로드 연결');
+    if (editing === 'nickname') commitNickname();
+    if (editing === 'email') commitEmail();
+
+    Alert.alert('프로필 사진', '프로필 사진을 변경할까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '갤러리에서 선택',
+        onPress: async () => {
+          const result = await launchImageLibrary({
+            mediaType: 'photo',
+            selectionLimit: 1,
+            quality: 0.9,
+          });
+          if (result.didCancel) return;
+          const asset = result.assets?.[0];
+          const uri = asset?.uri;
+          if (!uri) return showToast('이미지를 불러오지 못했어요');
+
+          setProfileImageUri(uri);
+          showToast('저장됐어요');
+        },
+      },
+      ...(profileImageUri
+        ? [
+            {
+              text: '사진 삭제',
+              style: 'destructive' as const,
+              onPress: () => {
+                setProfileImageUri(null);
+                showToast('저장됐어요');
+              },
+            },
+          ]
+        : []),
+    ]);
   };
 
   const onToggleKakaoEasyLogin = (next: boolean) => {
@@ -229,8 +268,8 @@ export default function ProfileSetting({ navigation }: Props) {
           <View style={styles.profileImageCircle}>
             <Image
               source={
-                user.profileImageUrl
-                  ? { uri: user.profileImageUrl }
+                profileImageUri
+                  ? { uri: profileImageUri }
                   : require('../../assets/icons/profilePic-default.png')
               }
               style={styles.profileImage}
