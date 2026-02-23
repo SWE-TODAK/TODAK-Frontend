@@ -16,6 +16,8 @@ import {
   Image,
   Switch,
   Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
@@ -46,6 +48,9 @@ export default function ProfileSetting({ navigation }: Props) {
   const [birthDraft, setBirthDraft] = useState(user.birth); // "YYYY-MM-DD"
   const [birthPickerVisible, setBirthPickerVisible] = useState(false);
 
+  const [sexDraft, setSexDraft] = useState<'M' | 'F'>(user.sex);
+  const [sexModalVisible, setSexModalVisible] = useState(false);
+
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const showToast = (msg: string) => {
@@ -56,7 +61,7 @@ export default function ProfileSetting({ navigation }: Props) {
     setTimeout(() => setToastVisible(false), 1400);
   };
 
-  const sexLabel = user.sex === 'F' ? '여성' : '남성';
+  const sexLabel = sexDraft === 'F' ? '여성' : '남성';
 
   const birthLabel = useMemo(() => {
     if (!birthDraft) return '';
@@ -115,7 +120,24 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onEditSex = () => {
-    Alert.alert('성별 수정', '여기에 성별 수정 화면/모달 연결');
+    // 인라인 편집 중이면 저장/종료부터
+    if (editing === 'nickname') commitNickname();
+    if (editing === 'email') commitEmail();
+
+    setSexModalVisible(true);
+  };
+
+  const commitSex = (next: 'M' | 'F') => {
+    if (next === sexDraft) {
+      setSexModalVisible(false);
+      return;
+    }
+
+    setSexDraft(next);
+    setSexModalVisible(false);
+
+    // TODO: 서버 저장 API 붙일 자리
+    showToast('저장됐어요');
   };
 
   const onEditProfileImage = () => {
@@ -329,6 +351,12 @@ export default function ProfileSetting({ navigation }: Props) {
               }}
             />
           )}
+          <SexPickerModal
+            visible={sexModalVisible}
+            value={sexDraft}
+            onClose={() => setSexModalVisible(false)}
+            onSelect={(next) => commitSex(next)}
+          />
     </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -425,6 +453,58 @@ function InfoRow({
       {/* ✅ 이메일 형식 에러 메시지 */}
       {!!errorText && <Text style={styles.inlineErrorText}>{errorText}</Text>}
     </View>
+  );
+}
+
+function SexPickerModal({
+  visible,
+  value,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  value: 'M' | 'F';
+  onClose: () => void;
+  onSelect: (v: 'M' | 'F') => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.modalBackdrop} onPress={onClose}>
+        {/* backdrop 눌렀을 때만 닫히게 */}
+      </Pressable>
+
+      <View style={styles.sheetWrap} pointerEvents="box-none">
+        <View style={styles.sheet}>
+          <Text style={styles.sheetTitle}>성별 선택</Text>
+
+          <Pressable
+            style={[styles.sheetRow, value === 'F' && styles.sheetRowActive]}
+            onPress={() => onSelect('F')}
+          >
+            <Text style={styles.sheetRowText}>여성</Text>
+            <View style={[styles.radioOuter, value === 'F' && styles.radioOuterActive]}>
+              {value === 'F' && <View style={styles.radioInner} />}
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={[styles.sheetRow, value === 'M' && styles.sheetRowActive]}
+            onPress={() => onSelect('M')}
+          >
+            <Text style={styles.sheetRowText}>남성</Text>
+            <View style={[styles.radioOuter, value === 'M' && styles.radioOuterActive]}>
+              {value === 'M' && <View style={styles.radioInner} />}
+            </View>
+          </Pressable>
+
+          <View style={styles.sheetActions}>
+            <Pressable style={styles.sheetCancelBtn} onPress={onClose}>
+              <Text style={styles.sheetCancelText}>취소</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -615,5 +695,86 @@ const styles = StyleSheet.create({
     height: 16,
     tintColor: '#9CA3AF',
     resizeMode: 'contain',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+
+  sheetWrap: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 18,
+  },
+
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+
+  sheetRowActive: {
+    backgroundColor: '#F8FAFC',
+  },
+
+  sheetRowText: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '600',
+  },
+
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  radioOuterActive: {
+    borderColor: '#111827',
+  },
+
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#111827',
+  },
+
+  sheetActions: {
+    marginTop: 10,
+    alignItems: 'flex-end',
+  },
+
+  sheetCancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  sheetCancelText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
