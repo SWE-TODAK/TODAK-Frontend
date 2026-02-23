@@ -10,6 +10,7 @@ type Props = {
   confirmColor?: string;   // 기본: 파랑(#3B82F6), 위험이면 빨강 등
   onCancel: () => void;
   onConfirm: () => void;
+  onBackdropPress?: () => void;
 };
 
 export default function ConfirmModal({
@@ -21,12 +22,15 @@ export default function ConfirmModal({
   confirmColor = '#3B82F6',
   onCancel,
   onConfirm,
+  onBackdropPress,
 }: Props) {
   if (!visible) return null;
 
+  const handleBackdropPress = onBackdropPress ?? onCancel;
+
   return (
     <View style={styles.absoluteContainer}>
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <Pressable style={styles.backdrop} onPress={handleBackdropPress}>
         <Pressable
           style={styles.card}
           onPress={(e) => e.stopPropagation()}
