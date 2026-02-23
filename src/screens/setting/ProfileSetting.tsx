@@ -36,6 +36,9 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const [kakaoEasyLogin, setKakaoEasyLogin] = useState(true);
+  // 카카오 간편 로그인 토글 confirm
+  const [kakaoModalVisible, setKakaoModalVisible] = useState(false);
+  const [pendingKakaoEasyLogin, setPendingKakaoEasyLogin] = useState<boolean | null>(null);
 
   const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
@@ -144,6 +147,41 @@ export default function ProfileSetting({ navigation }: Props) {
     Alert.alert('프로필 사진 수정', '여기에 이미지 선택/업로드 연결');
   };
 
+  const onToggleKakaoEasyLogin = (next: boolean) => {
+    if (editing === 'nickname') commitNickname();
+    if (editing === 'email') commitEmail();
+
+    setPendingKakaoEasyLogin(next);
+    setKakaoModalVisible(true);
+  };
+
+  const confirmKakaoEasyLogin = async () => {
+    if (pendingKakaoEasyLogin === null) return;
+
+    const next = pendingKakaoEasyLogin;
+
+    setKakaoModalVisible(false);
+    setPendingKakaoEasyLogin(null);
+
+    try {
+      // TODO: 서버 API 연결/해제
+      // next === true  -> 카카오 연결
+      // next === false -> 카카오 연결 해제
+      // await api.linkKakao() / await api.unlinkKakao()
+
+      setKakaoEasyLogin(next);
+      showToast(next ? '카카오 간편 로그인이 연결됐어요' : '카카오 간편 로그인이 해제됐어요');
+    } catch (e) {
+      // 실패 시 스위치 변경 안 함
+      showToast('처리 중 오류가 발생했어요');
+    }
+  };
+
+  const cancelKakaoEasyLogin = () => {
+    setKakaoModalVisible(false);
+    setPendingKakaoEasyLogin(null);
+  };
+
   const onPressChangePassword = () => {
     setConsentVisible(true);
   };
@@ -246,7 +284,7 @@ export default function ProfileSetting({ navigation }: Props) {
             <View style={styles.rowRight}>
               <Switch
                 value={kakaoEasyLogin}
-                onValueChange={setKakaoEasyLogin}
+                onValueChange={onToggleKakaoEasyLogin}
                 trackColor={{ false: '#E5E7EB', true: '#34C759' }}
                 thumbColor="#FFFFFF"
               />
@@ -295,6 +333,23 @@ export default function ProfileSetting({ navigation }: Props) {
                   skipSuccess: true,
                 } as any);
               }}
+            />
+
+            {/* 카카오 모달 */}
+            <ConfirmModal
+              visible={kakaoModalVisible}
+              title={pendingKakaoEasyLogin ? '카카오 간편 로그인 연결' : '카카오 간편 로그인 해제'}
+              message={
+                pendingKakaoEasyLogin
+                  ? '카카오 계정을 연결하여\n간편 로그인을 사용하시겠습니까?'
+                  : '카카오 간편 로그인을 해제하시겠습니까?'
+              }
+              cancelText="취소"
+              confirmText="확인"
+              // 해제는 위험 행동 느낌이 있으니 빨간색, 연결은 기본 색(네 ConfirmModal 기본값 없으면 여기서 지정 안 해도 됨)
+              confirmColor={pendingKakaoEasyLogin ? undefined : '#EF4444'}
+              onCancel={cancelKakaoEasyLogin}
+              onConfirm={confirmKakaoEasyLogin}
             />
 
             {/* 로그아웃 모달 */}
