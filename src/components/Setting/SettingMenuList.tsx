@@ -9,93 +9,55 @@ import {
 } from 'react-native';
 
 type Props = {
-  onPressFamily?: () => void;
-  onPressReservation?: () => void;
-  onPressAppSetting?: () => void;
-  onPressNotification?: () => void;
-  onPressLogout?: () => void;   // ⬅ 추가!
+  onPressProfile?: () => void;
+  onPressFeedback?: () => void;
+  onPressPrivacyHistory?: () => void;
 };
 
 const SettingMenuList: React.FC<Props> = ({
-  onPressFamily,
-  onPressReservation,
-  onPressAppSetting,
-  onPressNotification,
-  onPressLogout,   // ⬅ 추가
+  onPressProfile,
+  onPressFeedback,
+  onPressPrivacyHistory,
 }) => {
   return (
     <View style={styles.container}>
-      {/* 가족관리 */}
+      {/* 프로필 설정 */}
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.8}
-        onPress={onPressFamily}
+        onPress={onPressProfile}
       >
-        <View style={styles.rowLeft}>
-          <Image
-            source={require('../../assets/icons/family.png')}
-            style={styles.rowIcon}
-          />
-          <Text style={styles.rowText}>가족관리</Text>
-        </View>
-
+        <Text style={styles.rowText}>프로필 설정</Text>
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
         />
       </TouchableOpacity>
 
-      {/* 구분선 */}
-      <View style={styles.separator} />
-
-      {/* 예약 내역 */}
+      {/* 피드백을 보내주세요! */}
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.8}
-        onPress={onPressReservation}
+        onPress={onPressFeedback}
       >
-        <Text style={styles.rowText}>예약 내역</Text>
+        <Text style={styles.rowText}>피드백을 보내주세요!</Text>
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
         />
       </TouchableOpacity>
 
-      {/* 앱 설정 */}
+      {/* 개인정보 이용 내역 */}
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.8}
-        onPress={onPressAppSetting}
+        onPress={onPressPrivacyHistory}
       >
-        <Text style={styles.rowText}>앱 설정</Text>
+        <Text style={styles.rowText}>개인정보 이용 내역</Text>
         <Image
           source={require('../../assets/icons/arrow-right.png')}
           style={styles.chevron}
         />
-      </TouchableOpacity>
-
-      {/* 알림 설정 */}
-      <TouchableOpacity
-        style={styles.row}
-        activeOpacity={0.8}
-        onPress={onPressNotification}
-      >
-        <Text style={styles.rowText}>알림 설정</Text>
-        <Image
-          source={require('../../assets/icons/arrow-right.png')}
-          style={styles.chevron}
-        />
-      </TouchableOpacity>
-
-      {/* 🔻 여기에 로그아웃 추가 */}
-      <View style={styles.logoutSeparator} />
-
-      <TouchableOpacity
-        style={styles.logoutButton}
-        activeOpacity={0.8}
-        onPress={onPressLogout}
-      >
-        <Text style={styles.logoutText}>로그아웃</Text>
       </TouchableOpacity>
     </View>
   );
@@ -141,29 +103,5 @@ const styles = StyleSheet.create({
     height: 16,
     tintColor: '#9CA3AF',
     resizeMode: 'contain',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-
-  // 🔻 로그아웃 구분선
-  logoutSeparator: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginTop: 24,
-    marginBottom: 12,
-  },
-
-  logoutButton: {
-    paddingVertical: 12,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444', // 빨간색 로그아웃!
-    textAlign: 'left',
   },
 });
