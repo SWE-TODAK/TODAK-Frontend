@@ -11,7 +11,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpPassword'>;
 
@@ -19,7 +19,7 @@ const isValidPassword = (v: string) => v.trim().length >= 6;
 
 export default function SignUpPassword({ navigation, route }: Props) {
   const email = route.params?.email ?? '';
-  const code = route.params?.code ?? '';
+  //const code = route.params?.code ?? ''; //비번 재설정시 필요
 
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
@@ -69,9 +69,9 @@ export default function SignUpPassword({ navigation, route }: Props) {
       // await axios.post('/auth/password/reset', { email, code, newPassword: t1 });
 
       // ---- MOCK ----
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise<void>((resolve) => setTimeout(resolve, 600));
 
-      navigation.navigate('SignUpName', { email });
+      navigation.navigate('SignUpName', { email, password: t1 });
     } catch (e: any) {
       setError('잠시 후 다시 시도해 주세요.');
     } finally {

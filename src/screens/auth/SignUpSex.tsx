@@ -10,7 +10,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpSex'>;
 
@@ -19,6 +19,7 @@ type Sex = 'M' | 'F';
 export default function SignUpSex({ navigation, route }: Props) {
   const email = route.params?.email ?? '';
   const name = route.params?.name ?? '';
+  const password = route.params?.password ?? '';
 
   const [sex, setSex] = useState<Sex | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -45,6 +46,7 @@ export default function SignUpSex({ navigation, route }: Props) {
       email,
       name,
       sex,
+      password
     });
   };
 

@@ -13,7 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LocalPassword'>;

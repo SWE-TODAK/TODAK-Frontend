@@ -34,10 +34,10 @@ export type RootStackParamList = {
   LocalLogin: { email?: string } | undefined;
   LocalPassword: { email: string };
 
-  SignUpPassword: { email: string };
-  SignUpName: { email: string };
-  SignUpSex: { email: string; name: string };
-  SignUpBirth: { email: string; name: string; sex: 'M' | 'F' };
+    SignUpPassword: { email: string };
+    SignUpName: { email: string; password: string };
+    SignUpSex: { email: string; name: string; password: string };
+    SignUpBirth: { email: string; name: string; sex: 'M' | 'F'; password: string };
   SignUpSuccess: { email: string; name: string; sex: 'M' | 'F'; birth: string };
 
   ResetPasswordVerify: { email: string };
