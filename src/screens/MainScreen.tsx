@@ -1,8 +1,9 @@
 // MainScreen.tsx
-import React ,{useEffect,useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Hospital_Record from '../components/Home/Hospital_Record';
+import RecordPanel from '../components/Home/Record/RecordPanel';
+import RecentRecordsSection from '../components/Home/recentRecords/RecentRecordsSection';
 import { getUser } from '../utils/authStorage';
 
 const MainScreen: React.FC = () => {
@@ -14,8 +15,27 @@ const MainScreen: React.FC = () => {
       setUser(u);
     })();
   }, []);
+
+  const mockRecords = [
+  {
+    id: '1',
+    date: '2026.01.07',
+    description:
+      '이번 진료에서는 감기 초기 증상으로 판단되어 해열제와 감기약을 3일 처방했습니다.',
+  },
+  {
+    id: '2',
+    date: '2026.01.07',
+    description:
+      '이번 진료에서는 감기 초기 증상으로 판단되어 해열제와 감기약을 3일 처방했습니다.',
+  },
+];
+
+
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* 상단 로고 */}
       <View style={styles.Logocenter}>
         <Image
           source={require('../assets/photo/todak_logo.png')}
@@ -25,17 +45,11 @@ const MainScreen: React.FC = () => {
         <Text style={styles.title}>토닥</Text>
       </View>
 
-      {/* ✅ 사용자 정보 표시 */}
-      <View style={styles.userBox}>
-        <Text style={styles.welcomeText}>
-          {user?.name ? `${user.name}님, 안녕하세요!` : '안녕하세요!'}
-        </Text>
-        {!!user?.email && <Text style={styles.subText}>{user.email}</Text>}
-      </View>
+      <RecentRecordsSection records={mockRecords} />
 
-      {/* ✅ 메인에 녹음 버튼 */}
-      <View style={styles.recordArea}>
-        <Hospital_Record />
+      {/* ✅ 탭바 바로 위에 "붙는" 녹음 패널 */}
+      <View style={styles.recordDock}>
+        <RecordPanel />
       </View>
     </SafeAreaView>
   );
@@ -47,12 +61,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'rgba(236, 242, 252, 0.9)',
-    alignItems: 'center',
   },
   Logocenter: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 16,
+    justifyContent: 'center',
   },
   logo: {
     width: 58,
@@ -64,19 +78,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
-    userBox: {
-      marginTop: 12,
-      width: '100%',
-      paddingHorizontal: 20,
-    },
-    welcomeText: { fontSize: 16, fontWeight: '700' },
-    subText: { marginTop: 4, fontSize: 12, color: '#555' },
 
-
-  recordArea: {
-    marginTop: 28,
-    width: '100%',
-    paddingHorizontal: 20,
-    alignItems: 'center', // 가운데
+  // ✅ 여기! 탭바 위에 딱 붙게 고정
+  recordDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom:0,
   },
 });
