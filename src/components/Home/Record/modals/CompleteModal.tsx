@@ -9,6 +9,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 
 type Props = {
@@ -39,6 +40,20 @@ const CompleteModal: React.FC<Props> = ({
   const [doctor, setDoctor] = useState('');
   const [department, setDepartment] = useState('');
   const [title, setTitle] = useState(dateText);
+
+  const [showDeptList, setShowDeptList] = useState(false);
+  const [isCustomDept, setIsCustomDept] = useState(false);
+
+  const departmentOptions = [
+  '내과',
+  '이비인후과',
+  '안과',
+  '피부과',
+  '정형외과',
+  '산부인과',
+  '치과',
+  '직접 입력',
+];
 
   // 모달 열릴 때 초기화(원하면 제거 가능)
   useEffect(() => {
@@ -122,14 +137,56 @@ const CompleteModal: React.FC<Props> = ({
               style={styles.input}
             />
 
-            <Text style={styles.labelRight}>진료과</Text>
-            <TextInput
-              value={department}
-              onChangeText={setDepartment}
-              placeholder=""
-              placeholderTextColor="#B5BED5"
-              style={styles.inputRight}
-            />
+           <Text style={[styles.label, { marginLeft: 16 }]}>진료과</Text>
+
+            <View style={{ flex: 1 }}>
+              <Pressable
+                style={[styles.inputRight, styles.dropdownBox]}
+                onPress={() => setShowDeptList(prev => !prev)}
+              >
+                {isCustomDept ? (
+                  <TextInput
+                    value={department}
+                    onChangeText={setDepartment}
+                    placeholder="입력"
+                    placeholderTextColor="#B5BED5"
+                    style={styles.deptInputInside}
+                  />
+                ) : (
+                  <Text style={{ color: department ? '#111' : 'transparent' }}>
+                    {department || ' '}
+                  </Text>
+                )}
+
+                <Image
+                  source={require('../../../../assets/icons/arrow-right.png')}
+                  style={styles.dropdownIcon}
+                />
+              </Pressable>
+
+              {showDeptList && (
+                <View style={styles.dropdownList}>
+                  {departmentOptions.map(option => (
+                    <Pressable
+                      key={option}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        if (option === '직접 입력') {
+                          setIsCustomDept(true);
+                          setDepartment('');
+                        } else {
+                          setIsCustomDept(false);   // ✅ 다시 선택모드로 복귀
+                          setDepartment(option);
+                        }
+                        setShowDeptList(false);
+                      }}
+                    >
+                      <Text style={{ color: '#111' }}>{option}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
 
           {/* 3행: 내 진료명 */}
@@ -230,7 +287,7 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    width: 140,
+    width: 120,
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
@@ -289,5 +346,50 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '900',
     fontSize: 15,
+  },
+  dropdownBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  dropdownIcon: {
+    width: 13,
+    height: 13,
+    transform: [{ rotate: '90deg' }],
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -6,
+  },
+
+  dropdownList: {
+    position: 'absolute',
+    top: 44,          // ✅ inputRight(40) + 약간(4)
+    left: 0,
+    right: 0,
+
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E7EAF3',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+
+    zIndex: 999,
+    elevation: 10,    // ✅ Android에서 위로 뜨게
+  },
+
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F7',
+  },
+   deptInputInside: {
+    flex: 1,
+    height: 40,
+    paddingLeft: 0,
+    paddingRight: 34, 
+    color: '#111',
   },
 });
