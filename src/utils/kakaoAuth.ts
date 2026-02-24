@@ -7,10 +7,10 @@ const REST_API_KEY = '89015c2a864ed9dbb9f3e9e9f1c0bd92';
 
 // ✅ 카카오 콘솔에 등록된 Redirect URI (그리고 authorize 요청에 사용한 값과 동일해야 함)
 export const KAKAO_REDIRECT_URI =
-  'http://localhost:8080/login/oauth2/code/kakao';
+  'http://3.34.99.179:8080/api/v1/oauth2/authorization/kakao';
 
 // ✅ 너희 백엔드 base url
-const BACKEND_BASE_URL = 'https://localhost:8080/api/v1';
+const BACKEND_BASE_URL = 'http://3.34.99.179:8080/api/v1';
 
 // ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
 const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAccessToken } from '../utils/authStorage';
 
-const BASE_URL = 'http://3.34.99.179:8080';
+const BASE_URL = 'http://3.34.99.179:8080/api/v1';
 
 // ✅ 토큰 없이 쓰는 공개 API (회원가입/로그인/비번재설정 등)
 export const publicApi = axios.create({
