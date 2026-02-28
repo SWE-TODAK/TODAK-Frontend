@@ -17,18 +17,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ✅ 백엔드 호출 & 토큰 저장
-import api from '../api/axios';
-// ✅ 카카오 로그인 유틸 (start만 사용)
-import {
-  saveAccessToken,
-  saveRefreshToken,
-  saveUser,
-  getAccessToken, 
-} from '../utils/authStorage';
-
-// ✅ 카카오 로그인 유틸 (start + code→token 교환)
-import { startKakaoLogin } from '../utils/kakaoAuth';
+import { getAccessToken } from '../utils/authStorage';
+import { startKakaoLogin, kakaoLoginToBackend } from '../utils/kakaoAuth';
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
 import LoginIntro2 from '../components/Login/LoginIntro2';
@@ -39,9 +29,8 @@ type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 const TOTAL_PAGES = 3;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ✅ 렌더마다 바뀌지 않는 상수는 밖으로
-const REDIRECT_URI =
-  'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
+// ⚠️ 백이 “exchange API에 redirectUri 필수”라고 확정하면 여기 값 넣어서 전달하면 됨.
+// const REDIRECT_URI = '...백에서 쓰는 콜백 URL...';
 
 const Login: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -62,38 +51,21 @@ const Login: React.FC = () => {
         console.log('자동 로그인 체크 실패', e);
       }
     };
-
     checkLoggedIn();
   }, [navigation]);
 
-  // ✅ useCallback으로 고정 (딥링크 리스너 안정화)
+  // ✅ code 받으면 exchange 호출
   const processLogin = useCallback(
     async (code: string) => {
       try {
         console.log('🟡 [Login] authorizationCode 수신:', code);
 
-        // ✅ 백엔드로 code 전달 (카카오 토큰 교환은 백이 함)
-        const res = await api.post('/auth/kakao/login', {
-          authorizationCode: code,
-          redirectUri: REDIRECT_URI,
-        });
+        // ✅ redirectUri가 필요하면 두번째 인자로 넘기면 됨:
+        // await kakaoLoginToBackend(code, REDIRECT_URI);
 
-        console.log('🟢 [Login] 백엔드 응답:', res.data);
+        await kakaoLoginToBackend(code);
 
-        // ⚠️ 백 응답이 { data: { ... } } 형태면 여기 맞춰줘야 함
-        // 지금은 res.data가 바로 { accessToken, refreshToken, user } 라고 가정
-        const { accessToken, refreshToken, user } = res.data;
-
-        if (!accessToken || !refreshToken) {
-          console.error('❌ [Login] 토큰 누락:', res.data);
-          return;
-        }
-
-        await saveAccessToken(accessToken);
-        await saveRefreshToken(refreshToken);
-        if (user) await saveUser(user);
-
-        console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
+        console.log('🟢 [Login] 토큰 저장 완료 → MainTabs로 이동');
         navigation.replace('MainTabs');
       } catch (err) {
         console.error('🔴 [Login] 로그인 실패:', err);
@@ -107,7 +79,6 @@ const Login: React.FC = () => {
     const handleDeepLink = (event: { url: string }) => {
       const url = event.url;
       console.log('🟡 [Login] 딥링크 수신:', url);
-
       if (!url) return;
 
       const qIndex = url.indexOf('?');
@@ -119,21 +90,17 @@ const Login: React.FC = () => {
       queryString.split('&').forEach(part => {
         const [rawKey, rawValue] = part.split('=');
         if (!rawKey) return;
-        const key = decodeURIComponent(rawKey);
-        const value = decodeURIComponent(rawValue ?? '');
-        params[key] = value;
+        params[decodeURIComponent(rawKey)] = decodeURIComponent(rawValue ?? '');
       });
 
       console.log('🟡 [Login] 딥링크 파라미터:', params);
 
-      const code = params['code'];
-      const error = params['error'];
-
-      if (error) {
-        console.log('🔴 [Login] 카카오 인증 에러:', error, params);
+      if (params['error']) {
+        console.log('🔴 [Login] 카카오 인증 에러:', params);
         return;
       }
 
+      const code = params['code'];
       if (code) {
         console.log('🟢 [Login] 인가 코드 획득:', code);
         processLogin(code);
@@ -144,17 +111,13 @@ const Login: React.FC = () => {
 
     (async () => {
       const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) {
-        handleDeepLink({ url: initialUrl });
-      }
+      if (initialUrl) handleDeepLink({ url: initialUrl });
     })();
 
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [processLogin]);
 
-  // 🔘 카카오 로그인 버튼 처리: 카카오 로그인 화면만 띄우면 됨
+  // 🔘 카카오 로그인 시작: 백 시작 URL만 연다
   const handleKakaoLogin = async () => {
     try {
       console.log('🟡 [Login] 카카오 로그인 플로우 시작');
@@ -164,12 +127,9 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleMomentumScrollEnd = (
-    e: NativeSyntheticEvent<NativeScrollEvent>,
-  ) => {
+  const handleMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(offsetX / SCREEN_WIDTH);
-
     currentIndexRef.current = newIndex;
     setActiveIndex(newIndex);
   };
@@ -177,10 +137,7 @@ const Login: React.FC = () => {
   const renderDots = () => (
     <View style={styles.dotsContainer}>
       {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
-        <View
-          key={index}
-          style={[styles.dot, index === activeIndex && styles.dotActive]}
-        />
+        <View key={index} style={[styles.dot, index === activeIndex && styles.dotActive]} />
       ))}
     </View>
   );
@@ -196,22 +153,15 @@ const Login: React.FC = () => {
           onMomentumScrollEnd={handleMomentumScrollEnd}
           scrollEventThrottle={16}
         >
-          <View style={styles.introPage}>
-            <LoginIntro1 />
-          </View>
-          <View style={styles.introPage}>
-            <LoginIntro2 />
-          </View>
-          <View style={styles.introPage}>
-            <LoginIntro3 />
-          </View>
+          <View style={styles.introPage}><LoginIntro1 /></View>
+          <View style={styles.introPage}><LoginIntro2 /></View>
+          <View style={styles.introPage}><LoginIntro3 /></View>
         </ScrollView>
       </View>
 
       <View style={styles.bottomArea}>
         {renderDots()}
 
-        {/* 카카오 로그인 */}
         <TouchableOpacity
           style={styles.kakaoButton}
           activeOpacity={0.8}
@@ -224,7 +174,6 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
-        {/* 이메일 로그인 */}
         <TouchableOpacity
           style={styles.emailButton}
           activeOpacity={0.8}
@@ -237,13 +186,8 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
-        {/* 관리자 로그인 */}
-        <TouchableOpacity
-          onPress={() => navigation.replace('MainTabs')}
-        >
-          <Text style={styles.adminLoginText}>
-            병원 관리자 로그인
-          </Text>
+        <TouchableOpacity onPress={() => navigation.replace('MainTabs')}>
+          <Text style={styles.adminLoginText}>병원 관리자 로그인</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -284,23 +228,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   kakaoImage: { width: '100%', height: '100%' },
-
   emailButton: {
     width: '100%',
     height: 52,
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 10, // 관리자 로그인 텍스트와 간격
+    marginBottom: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emailImage: {
-    width: '100%',
-    height: '100%',
-  },
-
+  emailImage: { width: '100%', height: '100%' },
   adminLoginText: {
     fontSize: 12,
     color: '#777777',

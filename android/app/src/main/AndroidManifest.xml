@@ -27,13 +27,11 @@
         </intent-filter>
 
         <!-- ⭐ 카카오 로그인 딥링크 추가 (이것만 넣음) -->
-        <intent-filter android:label="kakaoLogin">
+        <intent-filter>
           <action android:name="android.intent.action.VIEW" />
-          <category android:name="android.intent.category.DEFAULT"/>
-          <category android:name="android.intent.category.BROWSABLE"/>
-          <data
-              android:scheme="todak"
-              android:host="kakao-login" />
+          <category android:name="android.intent.category.DEFAULT" />
+          <category android:name="android.intent.category.BROWSABLE" />
+          <data android:scheme="todak" android:host="auth" />
         </intent-filter>
 
       </activity>

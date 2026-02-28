@@ -5,6 +5,8 @@ const ACCESS_TOKEN_KEY = '@accessToken';
 const REFRESH_TOKEN_KEY = '@refreshToken';
 const USER_KEY = '@user';
 
+export type StoredUser = any;
+
 // ----------------------------
 // Access Token
 // ----------------------------
@@ -35,12 +37,14 @@ export const clearRefreshToken = async () => {
   await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
-
-export const saveUser = async (user: any) => {
+// ----------------------------
+// User
+// ----------------------------
+export const saveUser = async (user: StoredUser) => {
   await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
-export const getUser = async () => {
+export const getUser = async (): Promise<StoredUser | null> => {
   const raw = await AsyncStorage.getItem(USER_KEY);
   return raw ? JSON.parse(raw) : null;
 };
@@ -49,7 +53,9 @@ export const clearUser = async () => {
   await AsyncStorage.removeItem(USER_KEY);
 };
 
-// 전체 삭제에 user도 포함
+// ----------------------------
+// 전체 삭제
+// ----------------------------
 export const clearAllTokens = async () => {
   await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
 };
