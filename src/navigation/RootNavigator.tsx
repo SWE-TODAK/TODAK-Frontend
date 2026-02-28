@@ -31,7 +31,7 @@ export type RootStackParamList = {
   Reservation: undefined;
   Setting: undefined;
 
-  LocalLogin: { email?: string } | undefined;
+  LocalLogin: { email?: string; mode?: 'login' | 'signup' } | undefined;
   LocalPassword: { email: string };
 
     SignUpPassword: { email: string };
