@@ -1,65 +1,100 @@
 // src/components/Mycare/MycareRecordSection.tsx
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 
 type Props = {
-  dateLabel: string;       // 상단 날짜 (예: '2025.10.26')
-  clinicName: string;      // 토닥 안과
-  doctorName: string;      // 최홍서 원장님
-  summary: string;         // 진료 내용 요약 텍스트
-  prescription: string;    // 처방약 텍스트
-  onPressDetail?: () => void; // '진료 내역 상세 보기' 눌렀을 때
+  clinicName: string;
+  timeLabel: string;
+  deptName: string;
+  doctorName: string;
+  diseaseName: string;
+  summary: string;
+  onPressDetail?: () => void;
 };
 
 const MycareRecordSection: React.FC<Props> = ({
-  dateLabel,
   clinicName,
+  timeLabel,
+  deptName,
   doctorName,
+  diseaseName,
   summary,
-  prescription,
   onPressDetail,
 }) => {
+  const hasDept = !!deptName?.trim();
+  const hasDoctor = !!doctorName?.trim();
+  const hasDisease = !!diseaseName?.trim();
+
+  const labelColor = (hasValue: boolean) => (hasValue ? '#000000' : '#BBBEC3');
+  const valueColor = (hasValue: boolean) => (hasValue ? '#000000' : '#BBBEC3');
+
   return (
-    <View style={styles.sectionWrapper}>
-      {/* 날짜 + 상세 보기 */}
-      <View style={styles.dateRow}>
-        <Text style={styles.dateText}>{dateLabel}</Text>
-
-        <TouchableOpacity
-          style={styles.detailButton}
-          activeOpacity={0.8}
-          onPress={onPressDetail}
-        >
-          <Text style={styles.detailText}>진료 내역 상세 보기</Text>
-          <Text style={styles.detailArrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 진료 카드 */}
+    <View style={styles.wrapper}>
       <View style={styles.card}>
-        {/* 병원명 + 의사명 */}
-        <View style={styles.titleRow}>
-          <Text style={styles.clinicName}>{clinicName}</Text>
-          <Text style={styles.titleDivider}> | </Text>
-          <Text style={styles.doctorName}>{doctorName}</Text>
+        {/* 상단: 병원/시간 + 우측 정보(진료과/의사명/병명) */}
+        <View style={styles.topRow}>
+          {/* 좌측 */}
+          <View style={styles.leftCol}>
+            <View style={styles.leftItem}>
+              <Image
+                source={require('../../assets/icons/mycare-hospital.png')}
+                style={styles.leftIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.leftBlueText} numberOfLines={1}>
+                {clinicName}
+              </Text>
+            </View>
+
+            <View style={[styles.leftItem, { marginTop: 6 }]}>
+              <Image
+                source={require('../../assets/icons/clock-filled.png')}
+                style={styles.leftIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.leftBlueText} numberOfLines={1}>
+                {timeLabel}
+              </Text>
+            </View>
+          </View>
+
+          {/* 가운데 세로 구분선 */}
+          <View style={styles.vDivider} />
+
+          {/* 우측 */}
+          <View style={styles.rightCol}>
+            <View style={styles.rRow}>
+              <Text style={[styles.rLabel, { color: labelColor(hasDept) }]}>진료과</Text>
+              <Text style={[styles.rValue, { color: valueColor(hasDept) }]} numberOfLines={1}>
+                {hasDept ? deptName : ''}
+              </Text>
+            </View>
+
+            <View style={styles.rRow}>
+              <Text style={[styles.rLabel, { color: labelColor(hasDoctor) }]}>의사명</Text>
+              <Text style={[styles.rValue, { color: valueColor(hasDoctor) }]} numberOfLines={1}>
+                {hasDoctor ? doctorName : ''}
+              </Text>
+            </View>
+
+            <View style={styles.rRow}>
+              <Text style={[styles.rLabel, { color: labelColor(hasDisease) }]}>병명</Text>
+              <Text style={[styles.rValue, { color: valueColor(hasDisease) }]} numberOfLines={1}>
+                {hasDisease ? diseaseName : ''}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* 진료 내용 요약 */}
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>진료 내용 요약</Text>
-          <Text style={styles.infoValue}>{summary}</Text>
+        {/* 진료 요약 */}
+        <View style={styles.summaryArea}>
+          <Text style={styles.summaryTitle}>진료 요약</Text>
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryText}>{summary}</Text>
+          </View>
         </View>
 
-        {/* 처방약 */}
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>처방약</Text>
-          <Text style={styles.infoValue}>{prescription}</Text>
-        </View>
+
       </View>
     </View>
   );
@@ -68,82 +103,109 @@ const MycareRecordSection: React.FC<Props> = ({
 export default MycareRecordSection;
 
 const styles = StyleSheet.create({
-  sectionWrapper: {
-    marginBottom: 28,
+  wrapper: {
+    paddingHorizontal: 16,
+    marginTop: 10,
   },
-  dateRow: {
+
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BBBEC366',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+
+  leftCol: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  leftItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  leftIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+  },
+  leftBlueText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6E6',
+  },
+
+  vDivider: {
+    width: 1,
+    backgroundColor: '#BBBEC366',
+    marginHorizontal: 10,
+  },
+
+  rightCol: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  rRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-    marginLeft:10,
+    marginBottom: 6,
   },
-  dateText: {
-    fontSize: 14,
+  rLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  rValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    maxWidth: 90,
+    textAlign: 'right',
+  },
+
+  summaryArea: {
+    marginTop: 12,
+  },
+  summaryTitle: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: '#000000',
+    marginBottom: 8,
   },
-  detailButton: {
+  summaryBox: {
+    backgroundColor: 'rgba(236, 242, 252, 0.8)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  summaryText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000000',
+    lineHeight: 18,
+  },
+
+  detailBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
   },
   detailText: {
     fontSize: 12,
-    color: '#4169E1',
-    fontWeight: '500',
-  },
-  detailArrow: {
-    fontSize: 14,
-    color: '#4169E1',
-    marginLeft: 2,
-  },
-  card: {
-    marginHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  clinicName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  titleDivider: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginHorizontal: 4,
-  },
-  doctorName: {
-    fontSize: 14,
     fontWeight: '600',
-    color: '#4B5563',
+    color: '#000000',
   },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  infoLabel: {
-    width: 90, // '진료 내용 요약', '처방약' 라벨 고정 폭
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  infoValue: {
-    flex: 1,
-    fontSize: 13,
-    color: '#111827',
-    lineHeight: 19,
+  detailIcon: {
+    width: 14,
+    height: 14,
+    marginLeft: 4,
   },
 });
