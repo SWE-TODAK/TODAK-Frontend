@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MycareRecordSection from '../components/Mycare/MycareRecordSection';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
 
 type MycareRecord = {
   id: string;
@@ -22,6 +25,9 @@ type MycareRecord = {
   doctorName: string;
   diseaseName: string;
   summary: string;
+  fullText: string;
+  memo: string;
+  hasAudio: boolean;
 };
 
 const FILTERS = ['전체', '병원명', '진료과', '의사명', '병명'] as const;
@@ -32,6 +38,7 @@ type PeriodKey = (typeof PERIODS)[number];
 
 const Mycare: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<MycareStackParamList>>();
 
   const [search, setSearch] = useState('');
   const [filterKey, setFilterKey] = useState<FilterKey>('전체');
@@ -50,8 +57,10 @@ const Mycare: React.FC = () => {
       deptName: '안과',
       doctorName: '최홍서',
       diseaseName: '',
-      summary:
-        '시력검사 결과 큰 변화는 없으며, 현재 상태는 안정적인 편입니다. 다만 예방 차원에서 정기적인 검진만 권장됩니다.',
+      summary: '시력검사 결과 큰 변화는 없으며, 현재 상태는 안정적인 편입니다. 다만 예방 차원에서 정기적인 검진만 권장됩니다.',
+      fullText: '검사 결과를 종합해 보면 ... (전체 텍스트 더미)\n\n향후에도 정기 검진 권장...',
+      memo: '다음 검진: 6개월 뒤\n인공눈물 챙기기',
+      hasAudio: true,
     },
     {
       id: '2',
@@ -63,8 +72,19 @@ const Mycare: React.FC = () => {
       diseaseName: '',
       summary:
         '현재까지 검사상 유의미한 변화는 관찰되지 않으며, 전반적인 상태는 안정적입니다. 향후 상태 유지를 위해 정기적인 내과적 검진을 권장드립니다.',
+      fullText:
+        '검사 결과를 종합해 보면, 현재까지 이전과 비교하여 의미 있는 변화는 보이지 않으며 ...\n\n평소와 다른 증상이 새로 나타나거나 불편감이 있을 경우...',
+      memo: '이번 진료: 이상 없음\n예방 차원 정기 검진 권장',
+      hasAudio: false,
     },
   ];
+
+  const goDetail = (record: any) => {
+    navigation.navigate('MycareDetail', {
+      recordId: record.id,
+      records, // ✅ 전체 리스트 같이 넘김
+    });
+  };
 
   // 검색/필터 적용
   const filtered = useMemo(() => {
@@ -251,9 +271,7 @@ const Mycare: React.FC = () => {
 
               <Pressable
                 style={styles.sectionDetailBtn}
-                onPress={() => {
-                  // TODO: 해당 날짜 묶음 상세보기
-                }}
+                onPress={() => goDetail(items[0])}
               >
                 <Text style={styles.sectionDetail}>상세보기</Text>
                 <Image
@@ -273,9 +291,7 @@ const Mycare: React.FC = () => {
                 doctorName={r.doctorName}
                 diseaseName={r.diseaseName}
                 summary={r.summary}
-                onPressDetail={() => {
-                  console.log('상세:', r.id);
-                }}
+                onPressDetail={() => goDetail(r)}
               />
             ))}
           </View>
