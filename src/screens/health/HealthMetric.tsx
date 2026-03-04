@@ -4,6 +4,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import HealthMetricScroller from '../../components/Health/HealthMetricScroller';
+import BloodPressureChart from '../../components/Health/BloodPressureChart';
+import BloodPressureYAxis from '../../components/Health/BloodPressureYAxis';
+import MetricChartCard from '../../components/Health/chart/MetricChartCard.tsx';
+import { HealthStackParamList } from '../../navigation/HealthStackNavigator'; // ✅ 여기서 가져오기
 
 export type HealthMetricCategory =
   | 'kidney'
@@ -13,10 +18,16 @@ export type HealthMetricCategory =
   | 'liver'
   | 'bloodSugar';
 
-export type HealthStackParamList = {
-  HealthHome: undefined;
-  HealthMetric: { category: HealthMetricCategory; title: string };
-};
+
+
+type RecordPoint = { xLabel: string; systolic: number; diastolic: number };
+
+// ✅ 더미 데이터(나중에 API 데이터로 교체)
+const records: RecordPoint[] = Array.from({ length: 10 }).map((_, i) => ({
+  xLabel: String(i + 1),
+  systolic: 115 + Math.round(Math.random() * 25),
+  diastolic: 75 + Math.round(Math.random() * 15),
+}));
 
 type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
 type RouteProps = RouteProp<HealthStackParamList, 'HealthMetric'>;
@@ -27,6 +38,7 @@ const HealthMetric: React.FC = () => {
   const route = useRoute<RouteProps>();
 
   const { title } = route.params;
+
 
   return (
     <View style={styles.root}>
@@ -46,9 +58,26 @@ const HealthMetric: React.FC = () => {
 
       {/* ✅ 여기 아래부터는 나중에 컴포넌트 붙일 자리 */}
       <View style={styles.body}>
-        {/* 예: <RecentRecordFilter /> */}
-        {/* 예: <MetricChartCard /> */}
-        {/* 예: <MetricCommentCard /> */}
+          <MetricChartCard
+            title="수축·이완(mmHg)"
+            onPressInfo={() => console.log('info')}
+            onPressAdd={() => console.log('add')}
+          >
+            <HealthMetricScroller
+                records={records}
+                pointGap={44}
+                height={360}
+                yAxisWidth={40}
+                renderChart={(slice, chartWidth, h) => (
+                <BloodPressureChart
+                    data={slice}
+                    width={chartWidth}
+                    height={h}
+                />
+                )}
+                renderYAxis={(h) => <BloodPressureYAxis height={h} />}
+            />
+            </MetricChartCard>
       </View>
     </View>
   );
@@ -95,4 +124,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
   },
+  chartCard: {
+    marginHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 12,      // 카드 안쪽 위아래 여백
+    overflow: 'hidden',       // ✅ 카드 밖으로 삐져나오는 스크롤 컨텐츠 잘라주기
+    },
 });
