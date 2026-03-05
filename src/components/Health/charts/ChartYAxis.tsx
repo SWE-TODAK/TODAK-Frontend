@@ -28,12 +28,12 @@ export default function BloodPressureYAxis({
       {ticks.map((t) => (
         <SvgText
           key={t}
-          x="68%"
+          x={18}                 // ✅ 왼쪽 여백 (원하면 24~36 사이로 조절)
           y={yToPx(t) + 4}
-          fontSize="12"
+          fontSize="13"
           fontWeight="700"
           fill="#374151"
-          textAnchor="end"
+          textAnchor="start"     // ✅ 왼쪽 정렬
         >
           {t}
         </SvgText>

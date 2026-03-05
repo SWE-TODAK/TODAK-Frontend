@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import MyHealthMetricsSection from '../../components/Health/MyHealthMetricsSection';
+import MyHealthMetricsSection from '../../components/Health/health-home/MyHealthMetricsSection.tsx';
 import { MainTabParamList } from '../../navigation/MainTabNavigator';
 
 type HealthScreenNavProp = BottomTabNavigationProp<

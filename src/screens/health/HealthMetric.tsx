@@ -4,10 +4,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import HealthMetricScroller from '../../components/Health/HealthMetricScroller';
-import BloodPressureChart from '../../components/Health/BloodPressureChart';
-import BloodPressureYAxis from '../../components/Health/BloodPressureYAxis';
-import MetricChartCard from '../../components/Health/chart/MetricChartCard.tsx';
+import HealthMetricScroller from '../../components/Health/chart-core/HealthMetricScroller.tsx';
+import LineMetricChart from '../../components/Health/charts/LineMetricChart.tsx';
+import BloodPressureYAxis from '../../components/Health/charts/ChartYAxis.tsx';
+import MetricChartCard from '../../components/Health/chart-ui/MetricChartCard.tsx';
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator'; // ✅ 여기서 가져오기
 
 export type HealthMetricCategory =
@@ -67,14 +67,34 @@ const HealthMetric: React.FC = () => {
                 records={records}
                 pointGap={44}
                 height={360}
-                yAxisWidth={40}
+                yAxisWidth={43}
                 renderChart={(slice, chartWidth, h) => (
-                <BloodPressureChart
-                    data={slice}
-                    width={chartWidth}
-                    height={h}
+                <LineMetricChart
+                  width={chartWidth}
+                  height={h}
+                  reverseX={true}
+                  yMin={30}
+                  yMax={150}
+                  yTicks={[30, 60, 90, 120, 150]}
+                  zones={[
+                    { from: 90, to: 120, fill: '#A7F3C0', opacity: 0.85 },
+                    { from: 120, to: 140, fill: '#FDE68A', opacity: 0.75 },
+                    { from: 140, to: 150, fill: '#FCA5A5', opacity: 0.65 },
+                  ]}
+                  series={[
+                    {
+                      key: 'sys',
+                      stroke: '#1D4ED8',
+                      data: slice.map(d => ({ xLabel: d.xLabel, value: d.systolic })),
+                    },
+                    {
+                      key: 'dia',
+                      stroke: '#9CA3AF',
+                      data: slice.map(d => ({ xLabel: d.xLabel, value: d.diastolic })),
+                    },
+                  ]}
                 />
-                )}
+              )}
                 renderYAxis={(h) => <BloodPressureYAxis height={h} />}
             />
             </MetricChartCard>

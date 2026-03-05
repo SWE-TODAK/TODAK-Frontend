@@ -19,37 +19,37 @@ const ITEMS: Item[] = [
   {
     key: 'kidney',
     label: '신장 기능 (선택)',
-    icon: require('../../assets/icons/healthMetric/kidney.png'),
+    icon: require('../../../assets/icons/healthMetric/kidney.png'),
     
   },
   {
     key: 'lipid',
     label: '지질 · 콜레스테롤',
-    icon: require('../../assets/icons/healthMetric/lipid.png'),
+    icon: require('../../../assets/icons/healthMetric/lipid.png'),
     
   },
   {
     key: 'body',
     label: '체형 · 신체',
-    icon: require('../../assets/icons/healthMetric/body.png'),
+    icon: require('../../../assets/icons/healthMetric/body.png'),
     
   },
   {
     key: 'bloodPressure',
     label: '혈압 · 심혈관',
-    icon: require('../../assets/icons/healthMetric/bloodPressure.png'),
+    icon: require('../../../assets/icons/healthMetric/bloodPressure.png'),
     
   },
   {
     key: 'liver',
     label: '간 기능',
-    icon: require('../../assets/icons/healthMetric/liver.png'),
+    icon: require('../../../assets/icons/healthMetric/liver.png'),
     
   },
   {
     key: 'bloodSugar',
     label: '혈당 · 당뇨',
-    icon: require('../../assets/icons/healthMetric/bloodSugar.png'),
+    icon: require('../../../assets/icons/healthMetric/bloodSugar.png'),
     
   },
 ];
@@ -84,7 +84,7 @@ const MyHealthMetricsSection: React.FC<Props> = ({ onPressItem }) => {
 
               {/* ✅ 오른쪽 화살표 */}
               <Image
-                source={require('../../assets/icons/arrow-right.png')}
+                source={require('../../../assets/icons/arrow-right.png')}
                 style={styles.arrow}
               />
             </TouchableOpacity>
