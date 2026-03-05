@@ -1,5 +1,5 @@
 // src/screens/HealthMetric.tsx
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef ,useEffect} from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, UIManager, findNodeHandle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import ChartYAxis from '../../components/Health/charts/ChartYAxis';
 import MetricChartCard from '../../components/Health/chart-ui/MetricChartCard';
 import MetricInfoModal from '../../components/Health/chart-ui/MetricInfoModal';
 import { METRIC_INFO } from '../../components/Health/metricInfoMap';
+import MetricInputModal from '../../components/Health/chart-ui/MetricInputModal';
 
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
@@ -72,6 +73,13 @@ const HealthMetric: React.FC = () => {
     });
   };
 
+  const [inputOpen, setInputOpen] = useState(false);
+    useEffect(() => {
+    console.log('inputOpen:', inputOpen);
+  }, [inputOpen]);
+  const [sys, setSys] = useState('');
+  const [dia, setDia] = useState('');
+
     
 
   return (
@@ -95,7 +103,12 @@ const HealthMetric: React.FC = () => {
         <MetricChartCard
           title="수축·이완(mmHg)"
           onPressInfo={openInfo}
-          onPressAdd={() => console.log('add')}
+          onPressAdd={() => {
+            console.log('ADD PRESSED');
+            setSys('');
+            setDia('');
+            setInputOpen(true);
+          }}
           style={styles.cardMargin}
           infoRef={infoRef}
         >
@@ -145,6 +158,20 @@ const HealthMetric: React.FC = () => {
         bullets={info?.bullets ?? []}
         note={info?.note}
         anchor={anchor}
+      />
+
+      <MetricInputModal
+        visible={inputOpen}
+        onClose={() => setInputOpen(false)}
+        title={title} // 또는 "혈압·심혈관"
+        systolic={sys}
+        diastolic={dia}
+        onChangeSystolic={setSys}
+        onChangeDiastolic={setDia}
+        onSubmit={() => {
+          console.log('submit', { sys, dia });
+          setInputOpen(false);
+        }}
       />
     </View>
   );

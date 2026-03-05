@@ -12,6 +12,8 @@ import {
   Animated,
 } from 'react-native';
 
+import DatePicker from 'react-native-date-picker';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -37,6 +39,11 @@ export default function MetricInputModal({
   onSubmit,
 }: Props) {
   const slide = useRef(new Animated.Value(0)).current;
+
+  const [date, setDate] = React.useState(new Date());
+  const [dateOpen, setDateOpen] = React.useState(false);
+
+  const dateText = `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}.`;
 
   useEffect(() => {
     if (visible) {
@@ -72,19 +79,23 @@ export default function MetricInputModal({
 
             {/* 날짜/시간은 일단 UI만. 다음 단계에서 DatePicker 붙이면 됨 */}
             <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>날짜</Text>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>2026. 3. 5.</Text>
-              </View>
-            </View>
+                <Text style={styles.metaLabel}>날짜</Text>
 
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>시간</Text>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>23:11</Text>
-              </View>
-            </View>
-
+                <Pressable style={styles.pill} onPress={() => setDateOpen(true)}>
+                    <Text style={styles.pillText}>{dateText}</Text>
+                </Pressable>
+           </View>
+           <DatePicker
+                modal
+                open={dateOpen}
+                date={date}
+                mode="date"
+                onConfirm={(d) => {
+                    setDateOpen(false);
+                    setDate(d);
+                }}
+                onCancel={() => setDateOpen(false)}
+                />
             <View style={styles.form}>
               <View style={styles.inputRow}>
                 <Text style={styles.inputLabel}>수축</Text>
@@ -133,7 +144,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   sheet: {
-    backgroundColor: '#0B0F16',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     paddingHorizontal: 18,
@@ -145,12 +156,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 99,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: '#E5E7EB',
     marginBottom: 12,
   },
   title: {
     textAlign: 'center',
-    color: '#FFFFFF',
+    color: '#111827',
     fontSize: 22,
     fontWeight: '800',
     marginBottom: 12,
@@ -162,25 +173,25 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     width: 46,
-    color: 'rgba(255,255,255,0.65)',
+    color: '#6B7280',
     fontSize: 14,
     fontWeight: '700',
   },
   pill: {
     marginLeft: 'auto',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
   },
   pillText: {
-    color: 'rgba(255,255,255,0.9)',
+    color: '#111827',
     fontSize: 14,
     fontWeight: '700',
   },
   form: {
     marginTop: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 18,
     padding: 14,
   },
@@ -191,7 +202,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     width: 44,
-    color: 'rgba(255,255,255,0.85)',
+    color: '#111827',
     fontSize: 16,
     fontWeight: '800',
   },
@@ -200,14 +211,16 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    color: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // ✅ 흰색
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    color: '#111827',
     fontSize: 16,
     fontWeight: '800',
   },
   unit: {
     marginLeft: 10,
-    color: 'rgba(255,255,255,0.65)',
+    color: '#6B7280',
     fontSize: 14,
     fontWeight: '700',
   },
