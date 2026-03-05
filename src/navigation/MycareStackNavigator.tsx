@@ -3,6 +3,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Mycare from '../screens/Mycare';
 import MycareDetail from '../screens/MycareDetail';
+import MycareAudio from '../screens/MycareAudio';
 
 export type MycareRecordParam = {
   id: string;
@@ -21,10 +22,14 @@ export type MycareRecordParam = {
 };
 
 export type MycareStackParamList = {
-  Mycare: undefined;
+  MycareMain: undefined;
   MycareDetail: {
     recordId: string;
-    records: any[]; // 지금은 더미라 any로, 나중에 MycareRecord 확장 타입으로 바꾸면 됨
+    records: any[];
+  };
+  MycareAudio: {
+    recordId: string;
+    records: any[];
   };
 };
 
@@ -35,6 +40,7 @@ export default function MycareStackNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MycareMain" component={Mycare} />
       <Stack.Screen name="MycareDetail" component={MycareDetail} />
+      <Stack.Screen name="MycareAudio" component={MycareAudio} />
     </Stack.Navigator>
   );
 }

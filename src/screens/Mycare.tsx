@@ -56,7 +56,7 @@ const Mycare: React.FC = () => {
     setTimeout(() => setToastVisible(false), 1400);
   };
 
-  // ✅ 더미 데이터
+  // 더미 데이터
   const [records, setRecords] = useState<MycareRecord[]>([
     {
       id: '1',
@@ -91,7 +91,7 @@ const Mycare: React.FC = () => {
   const goDetail = (record: any) => {
     navigation.navigate('MycareDetail', {
       recordId: record.id,
-      records, // ✅ 전체 리스트 같이 넘김
+      records,
     });
   };
 
@@ -125,7 +125,7 @@ const Mycare: React.FC = () => {
 
   const onSelectFilter = (k: FilterKey) => {
     setFilterKey(k);
-    setFilterOpen(false); // ✅ 선택하면 다시 접기
+    setFilterOpen(false); // 선택하면 다시 접기
   };
 
   const onSelectPeriod = (p: PeriodKey) => {
@@ -146,7 +146,7 @@ const Mycare: React.FC = () => {
 
     if (msg) showToast(msg);
 
-    // ✅ 한번 처리했으면 params 제거 (read-only 아님)
+    // 한번 처리했으면 params 제거
     if (deletedRecordId || msg) {
       navigation.setParams({
         deletedRecordId: undefined,
@@ -180,7 +180,7 @@ const Mycare: React.FC = () => {
         <View style={{ width: 44 }} />
       </View>
 
-      {/* ✅ 상단 흰 패널 (검색/기간/필터 영역) */}
+      {/* 상단 흰 패널 (검색/기간/필터 영역) */}
       <View style={styles.topPanel}>
         {/* 검색 + 기간 */}
         <View style={styles.searchRow}>
@@ -199,7 +199,7 @@ const Mycare: React.FC = () => {
             />
           </View>
 
-          {/* ✅ period dropdown anchor */}
+          {/* period dropdown anchor */}
           <View style={styles.periodWrap}>
             <Pressable
               style={[
@@ -226,7 +226,7 @@ const Mycare: React.FC = () => {
               />
             </Pressable>
 
-            {/* ✅ 기간 드롭다운 */}
+            {/* 기간 드롭다운 */}
             {periodOpen && (
               <View style={styles.periodDropdown}>
                 {PERIODS.map((p, idx) => {
@@ -262,7 +262,7 @@ const Mycare: React.FC = () => {
                   ? require('../assets/icons/left-black.png')   // 펼쳐짐
                   : require('../assets/icons/right-black.png')  // 접힘
               }
-              style={[styles.foldedChipArrow, { tintColor: styles.foldedChipTextColor }]}
+              style={[styles.foldedChipArrow, { tintColor: '#000000' }]}
               resizeMode="contain"
             />
           </Pressable>
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   backImage: { width: 20, height: 20 },
   title: { color: '#333333', fontSize: 18, fontWeight: '600' },
 
-  // ✅ 상단 흰 패널
+  // 상단 흰 패널
   topPanel: {
     backgroundColor: '#FFFFFF',
     paddingBottom: 10,
@@ -414,12 +414,12 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     marginLeft: 6,
-    tintColor: '#000000', // ✅ 검정 png를 이 색으로 맞춤
+    tintColor: '#000000',
   },
   periodArrowIconActive: {
     tintColor: '#FFFFFFE6',
   },
-  // ✅ 기간 드롭다운 (periodBtn 아래)
+
   periodDropdown: {
     position: 'absolute',
     top: 42, // 버튼 아래
@@ -452,9 +452,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  foldedChipTextColor: '#000000', // tintColor용
-
-  // ✅ 가로로 한 줄
   filterAreaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -483,7 +480,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // ✅ 오른쪽으로 펼쳐지는 칩 컨테이너
   chipRowInline: {
     flexDirection: 'row',
     alignItems: 'center',

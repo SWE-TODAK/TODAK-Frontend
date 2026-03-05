@@ -14,7 +14,7 @@ export default function MycareDetail({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { recordId, records } = route.params;
 
-  // ✅ "최근 진료가 오른쪽"이 되려면 내림차순(최신 먼저) 정렬이 자연스러움
+  // "최근 진료가 오른쪽"이 되려면 내림차순(최신 먼저) 정렬이 자연스러움
   // 지금은 dateLabel이 "2025.04.23.수" 형태라 앞 10자리만 비교하면 됨
   const sortedRecords = useMemo(() => {
     const toKey = (dl: string) => dl.slice(0, 10).replace(/\./g, ''); // "20250423"
@@ -26,7 +26,7 @@ export default function MycareDetail({ navigation, route }: Props) {
     [sortedRecords, recordId]
   );
 
-  const record = sortedRecords[currentIndex]; // ✅ 이제 record를 여기서 확정
+  const record = sortedRecords[currentIndex];
   const hasPrev = currentIndex < sortedRecords.length - 1; // 더 과거(왼쪽)
   const hasNext = currentIndex > 0; // 더 최근(오른쪽)
 
@@ -63,10 +63,8 @@ export default function MycareDetail({ navigation, route }: Props) {
         <View style={{ width: 44 }} />
       </View>
 
-      {/* ❌ 기존 바깥 ScrollView 제거 */}
-
       <View style={styles.fixedWrap}>
-        {/* ✅ 고정: metaRow */}
+        {/* 고정: metaRow */}
         <View style={styles.metaRow}>
           <View style={styles.dateNavRow}>
             <Pressable
@@ -117,7 +115,7 @@ export default function MycareDetail({ navigation, route }: Props) {
           </Pressable>
         </View>
 
-        {/* ✅ 고정: TopCard */}
+        {/* 고정: TopCard */}
         <MycareDetailTopCard
           clinicName={record.clinicName}
           timeLabel={record.timeLabel}
@@ -126,7 +124,7 @@ export default function MycareDetail({ navigation, route }: Props) {
           diseaseName={record.diseaseName}
         />
 
-        {/* ✅ 고정: 하얀 카드 틀 / ✅ 스크롤: 카드 내부만 */}
+        {/* 고정: 하얀 카드 틀 / 스크롤: 카드 내부만 */}
         <View style={styles.detailCard}>
           <ScrollView
             style={{ flex: 1 }}
@@ -148,7 +146,10 @@ export default function MycareDetail({ navigation, route }: Props) {
               onPressSubtitle={
                 record.hasAudio
                   ? () => {
-                      // TODO: 녹음 화면으로 이동
+                      navigation.navigate('MycareAudio', {
+                          recordId: record.id,
+                          records: sortedRecords,
+                      });
                     }
                   : undefined
               }
@@ -161,7 +162,7 @@ export default function MycareDetail({ navigation, route }: Props) {
             {/* 진료 메모 */}
             <MycareDetailBlock title="진료 메모">
               <View style={[styles.grayBox, styles.memoBox]}>
-                {/* ✅ grayBox 내부 우상단 edit 버튼 */}
+                {/* grayBox 내부 우상단 edit 버튼 */}
                 <Pressable
                   onPress={() => setEditingMemo((v) => !v)}
                   style={styles.memoEditInBoxBtn}
@@ -174,7 +175,7 @@ export default function MycareDetail({ navigation, route }: Props) {
                   />
                 </Pressable>
 
-                {/* ✅ 버튼 아래로 내용 내려가게 */}
+                {/* 버튼 아래로 내용 내려가게 */}
                 {editingMemo ? (
                   <TextInput
                     value={memo}
@@ -204,8 +205,8 @@ export default function MycareDetail({ navigation, route }: Props) {
         onConfirm={() => {
           setDeleteModalVisible(false);
 
-          // ✅ Mycare 화면으로 이동 + 삭제 완료 토스트 신호 전달
-          navigation.navigate('MycareMain', {
+          // Mycare 화면으로 이동 + 삭제 완료 토스트 신호 전달
+          navigation.navigate('Mycare', {
             deletedRecordId: record.id,
             toastMessage: '삭제됐어요',
           } as any);
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
     color: '#000000',
-    marginRight: 8, // ✅ 날짜와 화살표 사이 간격
+    marginRight: 8, // 날짜와 화살표 사이 간격
   },
 
   trashInlineBtn: {
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   memoEditIcon: { width: 16, height: 16, tintColor: '#AEB3BD' },
   memoBox: {
     position: 'relative',
-    paddingTop: 34, // ✅ edit 버튼 row 아래로 내용 내려가게
+    paddingTop: 34, // edit 버튼 row 아래로 내용 내려가게
   },
 
   memoEditInBoxBtn: {
