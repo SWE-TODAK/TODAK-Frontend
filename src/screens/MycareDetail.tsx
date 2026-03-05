@@ -6,6 +6,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
 import MycareDetailTopCard from '../components/Mycare/MycareDetailTopCard';
 import MycareDetailBlock from '../components/Mycare/MycareDetailBlock';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 type Props = NativeStackScreenProps<MycareStackParamList, 'MycareDetail'>;
 
@@ -40,6 +41,8 @@ export default function MycareDetail({ navigation, route }: Props) {
     const next = sortedRecords[currentIndex - 1];
     navigation.replace('MycareDetail', { recordId: next.id, records: sortedRecords });
   };
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const [memo, setMemo] = useState(record.memo ?? '');
   const [editingMemo, setEditingMemo] = useState(false);
@@ -102,9 +105,7 @@ export default function MycareDetail({ navigation, route }: Props) {
           </View>
 
           <Pressable
-            onPress={() => {
-              // TODO: 삭제 로직
-            }}
+            onPress={() => setDeleteModalVisible(true)}
             style={styles.trashInlineBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -191,6 +192,25 @@ export default function MycareDetail({ navigation, route }: Props) {
           </ScrollView>
         </View>
       </View>
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        visible={deleteModalVisible}
+        title="진료 기록 삭제"
+        message="해당 진료 기록을 삭제할까요?"
+        cancelText="취소"
+        confirmText="삭제"
+        confirmColor="#EF4444"
+        onCancel={() => setDeleteModalVisible(false)}
+        onConfirm={() => {
+          setDeleteModalVisible(false);
+
+          // ✅ Mycare 화면으로 이동 + 삭제 완료 토스트 신호 전달
+          navigation.navigate('MycareMain', {
+            deletedRecordId: record.id,
+            toastMessage: '삭제됐어요',
+          } as any);
+        }}
+      />
     </View>
   );
 }

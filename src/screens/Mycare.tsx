@@ -1,5 +1,5 @@
 // src/screens/Mycare.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MycareRecordSection from '../components/Mycare/MycareRecordSection';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
+import Toast from '../components/common/Toast';
 
 type MycareRecord = {
   id: string;
@@ -47,8 +48,16 @@ const Mycare: React.FC = () => {
   const [periodKey, setPeriodKey] = useState<PeriodKey>('최근 1개월');
   const [periodOpen, setPeriodOpen] = useState(false);
 
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 1400);
+  };
+
   // ✅ 더미 데이터
-  const records: MycareRecord[] = [
+  const [records, setRecords] = useState<MycareRecord[]>([
     {
       id: '1',
       dateLabel: '2025.05.27.금',
@@ -77,7 +86,7 @@ const Mycare: React.FC = () => {
       memo: '이번 진료: 이상 없음\n예방 차원 정기 검진 권장',
       hasAudio: false,
     },
-  ];
+  ]);
 
   const goDetail = (record: any) => {
     navigation.navigate('MycareDetail', {
@@ -123,7 +132,28 @@ const Mycare: React.FC = () => {
       setPeriodKey(p);
       setPeriodOpen(false);
       // TODO: 여기서 기간에 맞춰 records API 호출/필터링 붙이면 됨
-    };
+  };
+
+  const route = useRoute<any>();
+
+  useEffect(() => {
+    const deletedRecordId = route.params?.deletedRecordId;
+    const msg = route.params?.toastMessage;
+
+    if (deletedRecordId) {
+      setRecords((prev) => prev.filter((r) => r.id !== deletedRecordId));
+    }
+
+    if (msg) showToast(msg);
+
+    // ✅ 한번 처리했으면 params 제거 (read-only 아님)
+    if (deletedRecordId || msg) {
+      navigation.setParams({
+        deletedRecordId: undefined,
+        toastMessage: undefined,
+      } as any);
+    }
+  }, [route.params, navigation]);
 
   return (
     <View style={styles.root}>
@@ -303,6 +333,7 @@ const Mycare: React.FC = () => {
           </View>
         )}
       </ScrollView>
+      <Toast visible={toastVisible} message={toastMessage} />
     </View>
   );
 };
