@@ -1,44 +1,78 @@
 // src/screens/HealthMetric.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, UIManager, findNodeHandle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import HealthMetricScroller from '../../components/Health/chart-core/HealthMetricScroller.tsx';
-import LineMetricChart from '../../components/Health/charts/LineMetricChart.tsx';
-import BloodPressureYAxis from '../../components/Health/charts/ChartYAxis.tsx';
-import MetricChartCard from '../../components/Health/chart-ui/MetricChartCard.tsx';
-import { HealthStackParamList } from '../../navigation/HealthStackNavigator'; // ✅ 여기서 가져오기
 
-export type HealthMetricCategory =
-  | 'kidney'
-  | 'lipid'
-  | 'body'
-  | 'bloodPressure'
-  | 'liver'
-  | 'bloodSugar';
+import HealthMetricScroller from '../../components/Health/chart-core/HealthMetricScroller';
+import LineMetricChart from '../../components/Health/charts/LineMetricChart';
+import ChartYAxis from '../../components/Health/charts/ChartYAxis';
+import MetricChartCard from '../../components/Health/chart-ui/MetricChartCard';
+import MetricInfoModal from '../../components/Health/chart-ui/MetricInfoModal';
+import { METRIC_INFO } from '../../components/Health/metricInfoMap';
 
+import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
+type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
+type RouteProps = RouteProp<HealthStackParamList, 'HealthMetric'>;
 
-type RecordPoint = { xLabel: string; systolic: number; diastolic: number };
+type BloodPressureRecord = {
+  xLabel: string;
+  systolic: number; // 수축기
+  diastolic: number; // 이완기
+};
+
+type Anchor = { x: number; y: number; width: number; height: number };
 
 // ✅ 더미 데이터(나중에 API 데이터로 교체)
-const records: RecordPoint[] = Array.from({ length: 10 }).map((_, i) => ({
+const records: BloodPressureRecord[] = Array.from({ length: 10 }).map((_, i) => ({
   xLabel: String(i + 1),
   systolic: 115 + Math.round(Math.random() * 25),
   diastolic: 75 + Math.round(Math.random() * 15),
 }));
 
-type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
-type RouteProps = RouteProp<HealthStackParamList, 'HealthMetric'>;
+
 
 const HealthMetric: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
 
-  const { title } = route.params;
+  // ✅ route에서 category까지 받기
+  const { title, category } = route.params;
+  const infoRef = useRef<any>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+   const [anchor, setAnchor] = useState<{
+    x: number; y: number; width: number; height: number;
+  } | null>(null); 
 
+  const info = useMemo(() => METRIC_INFO[category], [category]);
+
+  const openInfo = () => {
+    const node = findNodeHandle(infoRef.current);
+    if (!node) {
+      setInfoOpen(true);
+      return;
+    }
+
+    UIManager.measureInWindow(node, (x, y, width, height) => {
+      setAnchor({ x, y, width, height });
+      setInfoOpen(true);
+    });
+  };
+
+  const handlePressInfo = () => {
+    console.log('INFO PRESSED');
+
+    // ✅ 3) 버튼 위치 측정 -> anchor 세팅 -> open
+    infoRef.current?.measureInWindow?.((x: number, y: number, width: number, height: number) => {
+      setAnchor({ x, y, width, height });
+      setInfoOpen(true);
+    });
+  };
+
+    
 
   return (
     <View style={styles.root}>
@@ -53,52 +87,65 @@ const HealthMetric: React.FC = () => {
         <View style={{ width: 32 }} />
       </View>
 
-      {/* 헤더 아래 라인/그림자 */}
+      {/* 헤더 아래 라인 */}
       <View style={styles.headerShadow} />
 
-      {/* ✅ 여기 아래부터는 나중에 컴포넌트 붙일 자리 */}
+      {/* 바디 */}
       <View style={styles.body}>
-          <MetricChartCard
-            title="수축·이완(mmHg)"
-            onPressInfo={() => console.log('info')}
-            onPressAdd={() => console.log('add')}
-          >
-            <HealthMetricScroller
-                records={records}
-                pointGap={44}
-                height={360}
-                yAxisWidth={43}
-                renderChart={(slice, chartWidth, h) => (
-                <LineMetricChart
-                  width={chartWidth}
-                  height={h}
-                  reverseX={true}
-                  yMin={30}
-                  yMax={150}
-                  yTicks={[30, 60, 90, 120, 150]}
-                  zones={[
-                    { from: 90, to: 120, fill: '#A7F3C0', opacity: 0.85 },
-                    { from: 120, to: 140, fill: '#FDE68A', opacity: 0.75 },
-                    { from: 140, to: 150, fill: '#FCA5A5', opacity: 0.65 },
-                  ]}
-                  series={[
-                    {
-                      key: 'sys',
-                      stroke: '#1D4ED8',
-                      data: slice.map(d => ({ xLabel: d.xLabel, value: d.systolic })),
-                    },
-                    {
-                      key: 'dia',
-                      stroke: '#9CA3AF',
-                      data: slice.map(d => ({ xLabel: d.xLabel, value: d.diastolic })),
-                    },
-                  ]}
-                />
-              )}
-                renderYAxis={(h) => <BloodPressureYAxis height={h} />}
-            />
-            </MetricChartCard>
+        <MetricChartCard
+          title="수축·이완(mmHg)"
+          onPressInfo={openInfo}
+          onPressAdd={() => console.log('add')}
+          style={styles.cardMargin}
+          infoRef={infoRef}
+        >
+          <HealthMetricScroller
+            records={records}
+            pointGap={44}
+            height={360}
+            yAxisWidth={43}
+            renderChart={(slice, chartWidth, h) => (
+              <LineMetricChart
+                width={chartWidth}
+                height={h}
+                reverseX
+                yMin={30}
+                yMax={150}
+                yTicks={[30, 60, 90, 120, 150]}
+                zones={[
+                  { from: 90, to: 120, fill: '#A7F3C0', opacity: 0.85 },
+                  { from: 120, to: 140, fill: '#FDE68A', opacity: 0.75 },
+                  { from: 140, to: 150, fill: '#FCA5A5', opacity: 0.65 },
+                ]}
+                series={[
+                  {
+                    key: 'sys',
+                    stroke: '#1D4ED8',
+                    data: slice.map((d) => ({ xLabel: d.xLabel, value: d.systolic })),
+                  },
+                  {
+                    key: 'dia',
+                    stroke: '#9CA3AF',
+                    data: slice.map((d) => ({ xLabel: d.xLabel, value: d.diastolic })),
+                  },
+                ]}
+              />
+            )}
+            renderYAxis={(h) => (
+              <ChartYAxis height={h} yMin={30} yMax={150} ticks={[30, 60, 90, 120, 150]} />
+            )}
+          />
+        </MetricChartCard>
+
       </View>
+      <MetricInfoModal
+        visible={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        title={info?.title ?? ''}
+        bullets={info?.bullets ?? []}
+        note={info?.note}
+        anchor={anchor}
+      />
     </View>
   );
 };
@@ -144,11 +191,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
   },
-  chartCard: {
+  cardMargin: {
     marginHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 12,      // 카드 안쪽 위아래 여백
-    overflow: 'hidden',       // ✅ 카드 밖으로 삐져나오는 스크롤 컨텐츠 잘라주기
-    },
+  },
 });

@@ -1,8 +1,9 @@
+// MetricChartCard.tsx
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import InfoButton from './InfoButton';
 import AddButton from './AddButton';
-import ChartTitle from './ChartTitle.tsx';
+import ChartTitle from './ChartTitle';
 
 type Props = {
   title: string;
@@ -10,6 +11,8 @@ type Props = {
   onPressAdd?: () => void;
   children: React.ReactNode;
   style?: ViewStyle;
+
+  infoRef?: React.Ref<any>; // ✅ 타입은 일단 any로 (안정적으로)
 };
 
 export default function MetricChartCard({
@@ -18,26 +21,23 @@ export default function MetricChartCard({
   onPressAdd,
   children,
   style,
+  infoRef,
 }: Props) {
-
   return (
     <View style={[styles.card, style]}>
       <View style={styles.header}>
-        <InfoButton onPress={onPressInfo} />
+        <InfoButton ref={infoRef} onPress={onPressInfo} />
         <ChartTitle title={title} />
         <AddButton onPress={onPressAdd} />
       </View>
 
-      <View style={styles.body}>
-        {children}
-      </View>
+      <View style={styles.body}>{children}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     overflow: 'hidden',
