@@ -5,8 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // 실제 화면들
 import MainScreen from '../screens/MainScreen';
 import Health from '../screens/Health';
-import Mycare from '../screens/Mycare'
-import Calendar from '../screens/Calendar'
+import MycareStackNavigator from './MycareStackNavigator';
+import Calendar from '../screens/Calendar';
 import SettingStackNavigator from './SettingStackNavigator';
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
@@ -106,7 +106,7 @@ const MainTabNavigator = () => {
   />
   <Tab.Screen
     name="MyCare"
-    component={Mycare}
+    component={MycareStackNavigator}
     options={{ tabBarLabel: '내 진료' }}
   />
   <Tab.Screen
