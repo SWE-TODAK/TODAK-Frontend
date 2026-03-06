@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // 실제 화면들
 import MainScreen from '../screens/MainScreen';
-import Health from '../screens/Health';
+import HealthStackNavigator from './HealthStackNavigator';
 import MycareStackNavigator from './MycareStackNavigator';
 import Calendar from '../screens/Calendar';
 import SettingStackNavigator from './SettingStackNavigator';
@@ -14,7 +14,7 @@ import { View, Text,Image } from 'react-native';
 export type MainTabParamList = {
   Home: undefined;
   Calendar: undefined;
-  Health: undefined;
+  MyHealth: undefined;
   MyCare: undefined;
   Setting: undefined;
 };
@@ -56,7 +56,7 @@ const MainTabNavigator = () => {
           : require('../assets/icons/calendar-inactive.png');
         size = { width: 30, height: 30 }; // 캘린더 작게
       }
-      else if (route.name === 'Health') {
+      else if (route.name === 'MyHealth') {
         icon = focused
           ? require('../assets/icons/health-active.png')
           : require('../assets/icons/health-inactive.png');
@@ -100,8 +100,8 @@ const MainTabNavigator = () => {
     options={{ tabBarLabel: '캘린더' }}
   />
   <Tab.Screen
-    name="Health"
-    component={Health}
+    name="MyHealth"
+    component={HealthStackNavigator}
     options={{ tabBarLabel: '건강관리' }}
   />
   <Tab.Screen
