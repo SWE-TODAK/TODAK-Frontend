@@ -29,18 +29,33 @@ type Props = {
   width: number;
   height: number;
 
-  series: LineSeries[];     // ✅ 1개도 가능, 여러 개도 가능
+  series: LineSeries[];
 
-  yMin?: number;            // 기본 30
-  yMax?: number;            // 기본 150
-  yTicks?: number[];        // 기본 [30,60,90,120,150]
+  yMin?: number;
+  yMax?: number;
+  yTicks?: number[];
 
-  zones?: ChartZone[];      // 혈압 구간 배경 같은 것 (없으면 안 그림)
+  zones?: ChartZone[];
 
-  reverseX?: boolean;       // ✅ 최신이 오른쪽에 오게 하려면 true
-  showXLabels?: boolean;    // 기본 true
-  showXGrid?: boolean;      // 기본 true
-  showYGrid?: boolean;      // 기본 true
+  reverseX?: boolean;
+  showXLabels?: boolean;
+  showXGrid?: boolean;
+  showYGrid?: boolean;
+
+
+  // ✅ 추가: 선택된 선 & 선택 콜백
+  selectedKey?: string;
+  selectedPoint?: { key: string; index: number } | null;
+  onSelectSeries?: (key: string) => void;
+  onSelectPoint?: (payload: {
+    key: string;
+    index: number;
+    x: number;
+    y: number;
+    xLabel: string;
+    value: number;
+  }) => void;
+  
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -70,28 +85,31 @@ export default function LineMetricChart({
   showXLabels = true,
   showXGrid = true,
   showYGrid = true,
+
+  selectedKey,
+  selectedPoint,
+  onSelectSeries,
+  onSelectPoint,
 }: Props) {
-  // ✅ 차트 내부 패딩(이건 “차트 내용”만 조절)
   const paddingLeft = 6;
   const paddingRight = 10;
   const paddingTop = 14;
-  const paddingBottom = 26; // x라벨 자리 포함
+  const paddingBottom = 26;
 
   const chartW = Math.max(1, width - paddingLeft - paddingRight);
   const chartH = Math.max(1, height - paddingTop - paddingBottom);
 
-  // ✅ 전체 점 개수(가장 긴 series 기준)
   const n = Math.max(0, ...series.map((s) => s.data.length), 0);
 
   const yToPx = (v: number) => {
     const vv = clamp(v, yMin, yMax);
-    const t = (vv - yMin) / (yMax - yMin); // 0~1
+    const t = (vv - yMin) / (yMax - yMin);
     return paddingTop + (1 - t) * chartH;
   };
 
   const xToPx = (i: number) => {
     if (n <= 1) return paddingLeft;
-    const idx = reverseX ? (n - 1 - i) : i; // ✅ 뒤집기 옵션
+    const idx = reverseX ? (n - 1 - i) : i;
     return paddingLeft + (idx / (n - 1)) * chartW;
   };
 
@@ -104,14 +122,12 @@ export default function LineMetricChart({
   }, [series, width, height, yMin, yMax, reverseX]);
 
   const xGridIdxs = n <= 1 ? [0] : Array.from({ length: n }, (_, i) => i);
-
-  // ✅ x라벨은 첫 번째 series 기준(없으면 빈 배열)
   const xLabels = series[0]?.data ?? [];
 
   return (
     <View>
       <Svg width={width} height={height}>
-        {/* ✅ 배경 구간(zones) */}
+        {/* zones */}
         {zones.map((z, idx) => {
           const top = yToPx(z.to);
           const bottom = yToPx(z.from);
@@ -128,7 +144,7 @@ export default function LineMetricChart({
           );
         })}
 
-        {/* ✅ y축 격자 */}
+        {/* y grid */}
         {showYGrid &&
           yTicks.map((t) => {
             const y = yToPx(t);
@@ -146,7 +162,7 @@ export default function LineMetricChart({
             );
           })}
 
-        {/* ✅ x축 격자(점마다) */}
+        {/* x grid */}
         {showXGrid &&
           xGridIdxs.map((idx) => {
             const x = xToPx(idx);
@@ -164,7 +180,7 @@ export default function LineMetricChart({
             );
           })}
 
-        {/* ✅ X축 라벨 */}
+        {/* x labels */}
         {showXLabels &&
           xLabels.map((d, i) => {
             const x = xToPx(i);
@@ -184,28 +200,62 @@ export default function LineMetricChart({
             );
           })}
 
-        {/* ✅ 라인 + 점 (series 수만큼) */}
-        {computed.map((s) => (
-          <React.Fragment key={s.key}>
-            <Path
-              d={makePath(s.pts)}
-              stroke={s.stroke}
-              strokeWidth={s.strokeWidth ?? 3}
-              fill="none"
-            />
-            {s.pts.map((p, i) => (
-              <Circle
-                key={`${s.key}-${i}`}
-                cx={p.x}
-                cy={p.y}
-                r={s.pointRadius ?? 4}
-                fill={s.pointFill ?? '#FFFFFF'}
-                stroke={s.pointStroke ?? s.stroke}
-                strokeWidth={3}
+        {/* lines + points */}
+        {computed.map((s) => {
+          const hasSelection = !!selectedKey;
+          const isSelected = hasSelection && s.key === selectedKey;
+
+          // ✅ 기본은 "전부 회색", 선택된 것만 파란색
+          const baseGray = '#9CA3AF';
+          const activeBlue = '#2563EB';
+          const stroke = isSelected ? activeBlue : baseGray;
+
+          // ✅ 선택된 건 진하게, 나머진 살짝 흐리게(원하면 1로 고정해도 됨)
+          const lineOpacity = hasSelection ? (isSelected ? 1 : 0.45) : 1;
+
+          const lineWidth = isSelected ? (s.strokeWidth ?? 3) + 1.8 : (s.strokeWidth ?? 3);
+          const pointStrokeWidth = isSelected ? 4 : 3;
+          const pointRadius = isSelected ? (s.pointRadius ?? 4) + 2 : (s.pointRadius ?? 4);
+
+          return (
+            <React.Fragment key={s.key}>
+              <Path
+                d={makePath(s.pts)}
+                stroke={stroke}
+                strokeWidth={lineWidth}
+                opacity={lineOpacity}
+                fill="none"
               />
-            ))}
-          </React.Fragment>
-        ))}
+
+              {s.pts.map((p, i) => {
+                const pointData = s.data[i];
+                return (
+                  <Circle
+                    key={`${s.key}-${i}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={pointRadius}
+                    fill="#FFFFFF"
+                    stroke={stroke}
+                    strokeWidth={pointStrokeWidth}
+                    opacity={lineOpacity}
+                    onPress={() => {
+                      onSelectSeries?.(s.key);
+                      onSelectPoint?.({
+                        key: s.key,
+                        index: i,
+                        x: p.x,
+                        y: p.y,
+                        xLabel: pointData.xLabel,
+                        value: pointData.value,
+                      });
+                    }}
+                  />
+                );
+              })}
+            </React.Fragment>
+          );
+        })}
       </Svg>
     </View>
   );

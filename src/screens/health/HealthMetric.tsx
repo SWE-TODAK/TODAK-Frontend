@@ -74,15 +74,36 @@ const HealthMetric: React.FC = () => {
   };
 
   const [inputOpen, setInputOpen] = useState(false);
-    useEffect(() => {
-    console.log('inputOpen:', inputOpen);
-  }, [inputOpen]);
+
+  
+    
   const [sys, setSys] = useState('');
   const [dia, setDia] = useState('');
-
+  const [selectedSeriesKey, setSelectedSeriesKey] = useState<string>('sys');
+  const chartZones =
+  selectedSeriesKey === 'dia'
+    ? [
+        { from: 60, to: 80, fill: '#A7F3C0', opacity: 0.85 },
+        { from: 80, to: 90, fill: '#FDE68A', opacity: 0.75 },
+        { from: 90, to: 100, fill: '#FCA5A5', opacity: 0.65 },
+      ]
+    : [
+        { from: 90, to: 120, fill: '#A7F3C0', opacity: 0.85 },
+        { from: 120, to: 140, fill: '#FDE68A', opacity: 0.75 },
+        { from: 140, to: 150, fill: '#FCA5A5', opacity: 0.65 },
+      ];
+  const [tooltip, setTooltip] = useState<{
+    key: string;
+    index: number;
+    x: number;
+    y: number;
+    xLabel: string;
+    value: number;
+  } | null>(null);
     
 
   return (
+    
     <View style={styles.root}>
       {/* 헤더 */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -125,11 +146,27 @@ const HealthMetric: React.FC = () => {
                 yMin={30}
                 yMax={150}
                 yTicks={[30, 60, 90, 120, 150]}
-                zones={[
-                  { from: 90, to: 120, fill: '#A7F3C0', opacity: 0.85 },
-                  { from: 120, to: 140, fill: '#FDE68A', opacity: 0.75 },
-                  { from: 140, to: 150, fill: '#FCA5A5', opacity: 0.65 },
-                ]}
+                zones={chartZones}
+                selectedKey={selectedSeriesKey}
+                selectedPoint={tooltip ? { key: tooltip.key, index: tooltip.index } : null}
+                onSelectSeries={(key) => {
+                  console.log('selected series:', key);
+                  setSelectedSeriesKey(key);
+                }}
+                onSelectPoint={(point) => {
+                  console.log('selected point:', point);
+
+                  setTooltip((prev) => {
+                    if (
+                      prev &&
+                      prev.index === point.index &&
+                      prev.key === point.key
+                    ) {
+                      return null; // 같은 점이면 닫기
+                    }
+                    return point;
+                  });
+                }}
                 series={[
                   {
                     key: 'sys',
@@ -151,6 +188,38 @@ const HealthMetric: React.FC = () => {
         </MetricChartCard>
 
       </View>
+      {tooltip && (
+         <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setTooltip(null)}
+          style={{
+            position: 'absolute',
+            top: tooltip.y + 70,
+            left: tooltip.x ,
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderWidth: 1,
+            borderColor: '#3B82F6',
+            elevation: 6,
+          }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+            {tooltip.xLabel}
+          </Text>
+          <Text
+            style={{
+              marginTop: 4,
+              fontSize: 16,
+              fontWeight: '700',
+              color: tooltip.key === 'sys' ? '#2563EB' : '#EAB308',
+            }}
+          >
+            {tooltip.key === 'sys' ? '수축' : '이완'} {tooltip.value}mmHg
+          </Text>
+        </TouchableOpacity>
+      )}
       <MetricInfoModal
         visible={infoOpen}
         onClose={() => setInfoOpen(false)}
