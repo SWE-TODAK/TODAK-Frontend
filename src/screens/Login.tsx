@@ -26,11 +26,8 @@ import LoginIntro3 from '../components/Login/LoginIntro3';
 
 type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
-const TOTAL_PAGES = 3;
+const TOTAL_PAGES = 2;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// ⚠️ 백이 “exchange API에 redirectUri 필수”라고 확정하면 여기 값 넣어서 전달하면 됨.
-// const REDIRECT_URI = '...백에서 쓰는 콜백 URL...';
 
 const Login: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -38,7 +35,7 @@ const Login: React.FC = () => {
   const currentIndexRef = useRef(0);
   const navigation = useNavigation<LoginNavProp>();
 
-  // ✅ 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
+  // 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
@@ -51,21 +48,21 @@ const Login: React.FC = () => {
         console.log('자동 로그인 체크 실패', e);
       }
     };
+
     checkLoggedIn();
   }, [navigation]);
 
-  // ✅ code 받으면 exchange 호출
+  // 딥링크로 받은 code를 백엔드 exchange API에 전달
   const processLogin = useCallback(
     async (code: string) => {
       try {
         console.log('🟡 [Login] authorizationCode 수신:', code);
 
-        // ✅ redirectUri가 필요하면 두번째 인자로 넘기면 됨:
-        // await kakaoLoginToBackend(code, REDIRECT_URI);
+        const data = await kakaoLoginToBackend(code);
 
-        await kakaoLoginToBackend(code);
+        console.log('🟢 [Login] 백엔드 응답:', data);
+        console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
 
-        console.log('🟢 [Login] 토큰 저장 완료 → MainTabs로 이동');
         navigation.replace('MainTabs');
       } catch (err) {
         console.error('🔴 [Login] 로그인 실패:', err);
@@ -74,11 +71,12 @@ const Login: React.FC = () => {
     [navigation],
   );
 
-  // 🔹 딥링크에서 code=... 감지
+  // 딥링크에서 code=... 감지
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       const url = event.url;
       console.log('🟡 [Login] 딥링크 수신:', url);
+
       if (!url) return;
 
       const qIndex = url.indexOf('?');
@@ -90,17 +88,21 @@ const Login: React.FC = () => {
       queryString.split('&').forEach(part => {
         const [rawKey, rawValue] = part.split('=');
         if (!rawKey) return;
-        params[decodeURIComponent(rawKey)] = decodeURIComponent(rawValue ?? '');
+        const key = decodeURIComponent(rawKey);
+        const value = decodeURIComponent(rawValue ?? '');
+        params[key] = value;
       });
 
       console.log('🟡 [Login] 딥링크 파라미터:', params);
 
-      if (params['error']) {
-        console.log('🔴 [Login] 카카오 인증 에러:', params);
+      const code = params['code'];
+      const error = params['error'];
+
+      if (error) {
+        console.log('🔴 [Login] 카카오 인증 에러:', error, params);
         return;
       }
 
-      const code = params['code'];
       if (code) {
         console.log('🟢 [Login] 인가 코드 획득:', code);
         processLogin(code);
@@ -111,13 +113,16 @@ const Login: React.FC = () => {
 
     (async () => {
       const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) handleDeepLink({ url: initialUrl });
+      if (initialUrl) {
+        handleDeepLink({ url: initialUrl });
+      }
     })();
 
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+    };
   }, [processLogin]);
 
-  // 🔘 카카오 로그인 시작: 백 시작 URL만 연다
   const handleKakaoLogin = async () => {
     try {
       console.log('🟡 [Login] 카카오 로그인 플로우 시작');
@@ -127,9 +132,12 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleMomentumScrollEnd = (
+    e: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(offsetX / SCREEN_WIDTH);
+
     currentIndexRef.current = newIndex;
     setActiveIndex(newIndex);
   };
@@ -137,7 +145,10 @@ const Login: React.FC = () => {
   const renderDots = () => (
     <View style={styles.dotsContainer}>
       {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
-        <View key={index} style={[styles.dot, index === activeIndex && styles.dotActive]} />
+        <View
+          key={index}
+          style={[styles.dot, index === activeIndex && styles.dotActive]}
+        />
       ))}
     </View>
   );
@@ -153,9 +164,12 @@ const Login: React.FC = () => {
           onMomentumScrollEnd={handleMomentumScrollEnd}
           scrollEventThrottle={16}
         >
-          <View style={styles.introPage}><LoginIntro1 /></View>
-          <View style={styles.introPage}><LoginIntro2 /></View>
-          <View style={styles.introPage}><LoginIntro3 /></View>
+          <View style={styles.introPage}>
+            <LoginIntro1 />
+          </View>
+          <View style={styles.introPage}>
+            <LoginIntro2 />
+          </View>
         </ScrollView>
       </View>
 
@@ -238,7 +252,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emailImage: { width: '100%', height: '100%' },
+  emailImage: {
+    width: '100%',
+    height: '100%',
+  },
   adminLoginText: {
     fontSize: 12,
     color: '#777777',
