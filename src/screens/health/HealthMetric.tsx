@@ -13,6 +13,9 @@ import MetricInfoModal from '../../components/Health/chart-ui/MetricInfoModal';
 import { METRIC_INFO } from '../../components/Health/metricInfoMap';
 import MetricInputModal from '../../components/Health/chart-ui/MetricInputModal';
 
+import RecentRecordFilter from '../../components/Health/RecentRecordFilter';
+import RecordFilterModal from '../../components/Health/RecordFilterModal';
+
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
 type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
@@ -39,6 +42,15 @@ const HealthMetric: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
+
+  //최근기록보기
+  const [recordFilter, setRecordFilter] = useState<number | 'all'>(7);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [customFilterValue, setCustomFilterValue] = useState(String(recordFilter === 'all' ? 7 : recordFilter));
+  const filteredRecords = useMemo(() => {
+  if (recordFilter === 'all') return records;
+  return records.slice(-recordFilter);
+}, [recordFilter]);
 
   // ✅ route에서 category까지 받기
   const { title, category } = route.params;
@@ -118,6 +130,57 @@ const HealthMetric: React.FC = () => {
 
       {/* 헤더 아래 라인 */}
       <View style={styles.headerShadow} />
+      <View style={styles.filterSection}>
+        <Text style={styles.filterTitle}>최근 기록 보기</Text>
+
+        <View style={styles.filterRow}>
+          <View style={styles.filterBox}>
+            <RecentRecordFilter
+              value={recordFilter}
+              onChange={(value) => {
+                setRecordFilter(value);
+                setTooltip(null); // 필터 바뀌면 툴팁 닫기
+              }}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.filterIconButton,
+              filterModalOpen && styles.filterIconButtonActive,
+            ]}
+            onPress={() => {
+              console.log('FILTER PRESSED');
+              setCustomFilterValue(String(recordFilter === 'all' ? 7 : recordFilter));
+              setFilterModalOpen(true);
+            }}
+          >
+            <Image
+              source={
+                filterModalOpen
+                  ? require('../../assets/icons/blue-filter.png')
+                  : require('../../assets/icons/filter.png')
+              }
+              style={styles.filterIcon}
+            />
+          </TouchableOpacity>
+          <RecordFilterModal
+            visible={filterModalOpen}
+            value={customFilterValue}
+            onChangeValue={setCustomFilterValue}
+            onClose={() => setFilterModalOpen(false)}
+            onConfirm={() => {
+              const n = Number(customFilterValue);
+
+              if (!Number.isNaN(n) && n > 0) {
+                setRecordFilter(n as 7 | 14 | 21 | 'all'); // 일단 임시
+              }
+
+              setFilterModalOpen(false);
+            }}
+          />
+        </View>
+      </View>
 
       {/* 바디 */}
       <View style={styles.body}>
@@ -134,10 +197,10 @@ const HealthMetric: React.FC = () => {
           infoRef={infoRef}
         >
           <HealthMetricScroller
-            records={records}
+            records={filteredRecords}
             pointGap={44}
             height={360}
-            yAxisWidth={43}
+            yAxisWidth={45}
             renderChart={(slice, chartWidth, h) => (
               <LineMetricChart
                 width={chartWidth}
@@ -194,7 +257,7 @@ const HealthMetric: React.FC = () => {
             onPress={() => setTooltip(null)}
           style={{
             position: 'absolute',
-            top: tooltip.y + 70,
+            top: tooltip.y + 250,
             left: tooltip.x ,
             backgroundColor: '#FFFFFF',
             borderRadius: 14,
@@ -285,9 +348,47 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingTop: 16,
+    paddingTop: 5,
   },
   cardMargin: {
     marginHorizontal: 20,
+  },
+  filterSection: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  filterTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop:12,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterBox: {
+    flex: 1,
+  },
+  filterIconButton: {
+    marginLeft: 8,
+    width: 45,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  filterIconButtonActive: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
   },
 });

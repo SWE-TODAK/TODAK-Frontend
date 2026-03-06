@@ -91,7 +91,7 @@ export default function LineMetricChart({
   onSelectSeries,
   onSelectPoint,
 }: Props) {
-  const paddingLeft = 6;
+  const paddingLeft = 10;
   const paddingRight = 10;
   const paddingTop = 14;
   const paddingBottom = 26;
@@ -155,7 +155,7 @@ export default function LineMetricChart({
                 x2={paddingLeft + chartW}
                 y1={y}
                 y2={y}
-                stroke="#D1D5DB"
+                stroke="#CCCCCC"
                 strokeWidth={1}
                 strokeDasharray="4 4"
               />
@@ -173,7 +173,7 @@ export default function LineMetricChart({
                 x2={x}
                 y1={paddingTop}
                 y2={paddingTop + chartH}
-                stroke="#D1D5DB"
+                stroke="#CCCCCC"
                 strokeWidth={1}
                 strokeDasharray="4 4"
               />
