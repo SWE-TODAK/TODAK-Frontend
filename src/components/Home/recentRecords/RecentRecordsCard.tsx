@@ -5,8 +5,10 @@ import { useNavigation } from '@react-navigation/native';
 
 type RecordItem = {
   id: string;
-  date: string;
-  description: string;
+  dateLabel?: string;
+  date?: string;
+  summary?: string;
+  description?: string;
   [key: string]: any;
 };
 
@@ -18,53 +20,69 @@ const MAX_RECORDS_IN_CARD = 4;
 
 const RecentRecordsCard: React.FC<Props> = ({ records }) => {
   const navigation = useNavigation<any>();
-  const visible = records.slice(0, MAX_RECORDS_IN_CARD); // 실제 기록만 (최대 4개)
+
+  const visible = records.slice(0, MAX_RECORDS_IN_CARD);
 
   return (
-  <View style={styles.card}>
-    <View style={styles.listArea}>
-      {visible.map((item, index) => {
-        const isLast = index === visible.length - 1;
+    <View style={styles.card}>
+      <View style={styles.listArea}>
+        {visible.map((item, index) => {
+          const isLast = index === visible.length - 1;
 
-        return (
-          <Pressable key={item.id} style={styles.row}>
-            <View style={styles.textArea}>
-              <Text style={styles.date}>{item.date}</Text>
-              <Text style={styles.desc} numberOfLines={2}>
-                {item.description}
-              </Text>
-            </View>
+          return (
+            <Pressable
+              key={item.id}
+              style={styles.row}
+              onPress={() => {
+                navigation.navigate('MyCare', {
+                  screen: 'MycareDetail',
+                  params: {
+                    recordId: item.id,
+                    records: records,
+                  },
+                });
+              }}
+            >
+              <View style={styles.textArea}>
+                <Text style={styles.date}>{item.dateLabel || item.date}</Text>
+                <Text style={styles.desc} numberOfLines={2}>
+                  {item.summary || item.description}
+                </Text>
+              </View>
 
-            <Image
-              source={require('../../../assets/icons/arrow-right.png')}
-              style={styles.arrow}
-              resizeMode="contain"
-            />
+              <Image
+                source={require('../../../assets/icons/arrow-right.png')}
+                style={styles.arrow}
+                resizeMode="contain"
+              />
 
-            {!isLast && <View style={styles.divider} />}
-          </Pressable>
-        );
-      })}
+              {!isLast && <View style={styles.divider} />}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.moreArea}>
+        <View style={styles.moreDivider} />
+        <Pressable
+          style={styles.moreRow}
+          onPress={() => navigation.navigate('MyCare', { screen: 'MycareMain' })}
+        >
+          <Text style={styles.moreText}>더보기</Text>
+          <Image
+            source={require('../../../assets/icons/arrow-right.png')}
+            style={styles.moreArrow}
+            resizeMode="contain"
+          />
+        </Pressable>
+      </View>
     </View>
-
-    {/* ✅ divider + 더보기 묶기 */}
-    <View style={styles.moreArea}>
-      <View style={styles.moreDivider} />
-      <Pressable style={styles.moreRow}>
-        <Text style={styles.moreText}>더보기</Text>
-        <Image
-          source={require('../../../assets/icons/arrow-right.png')}
-          style={styles.moreArrow}
-          resizeMode="contain"
-        />
-      </Pressable>
-    </View>
-  </View>
-);
+  );
 };
 
 export default RecentRecordsCard;
 
+// ... (이하 StyleSheet 부분은 기존과 동일하므로 생략하지 않고 그대로 두시면 됩니다.)
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
@@ -72,16 +90,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingTop: 20,
     paddingBottom: 10,
-
-    height: 400,                 // ✅ 카드 높이 고정
-    justifyContent: 'space-between', // ✅ 위(listArea) / 아래(더보기) 분리
+    height: 400,
+    justifyContent: 'space-between',
   },
-
-  // ✅ 기록 리스트 영역(위쪽)
-  listArea: {
-    // 필요하면 여백 조절 가능
-  },
-
+  listArea: {},
   row: {
     position: 'relative',
     paddingBottom: 14,
@@ -116,11 +128,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E7EAF3',
   },
-
-  // ✅ 더보기(아래쪽)
-  moreArea: {
-  // 아래쪽 덩어리
-},
+  moreArea: {},
   moreRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -139,7 +147,7 @@ const styles = StyleSheet.create({
     height: 13,
   },
   moreDivider: {
-  height: 1,
-  backgroundColor: '#E7EAF3',
-},
+    height: 1,
+    backgroundColor: '#E7EAF3',
+  },
 });

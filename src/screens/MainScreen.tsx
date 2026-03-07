@@ -1,4 +1,4 @@
-// src/screens/MainScreen.tsx
+// MainScreen.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,30 +16,30 @@ const MainScreen: React.FC = () => {
     })();
   }, []);
 
-  // ✅ Mycare.tsx 와 동일한 더미 데이터로 통일
+  // Mycare.tsx의 더미 데이터와 완벽 통일
   const mockRecords = [
     {
       id: '1',
-      date: '2025.05.27.금',
-      description: '시력검사 결과 큰 변화는 없으며, 현재 상태는 안정적인 편입니다. 다만 예방 차원에서 정기적인 검진만 권장됩니다.',
+      dateLabel: '2025.05.27.금',
       clinicName: '밝은 눈 안과',
       timeLabel: '10:00 AM',
       deptName: '안과',
       doctorName: '최홍서',
       diseaseName: '',
+      summary: '시력검사 결과 큰 변화는 없으며, 현재 상태는 안정적인 편입니다. 다만 예방 차원에서 정기적인 검진만 권장됩니다.',
       fullText: '검사 결과를 종합해 보면 ... (전체 텍스트 더미)\n\n향후에도 정기 검진 권장...',
       memo: '다음 검진: 6개월 뒤\n인공눈물 챙기기',
       hasAudio: true,
     },
     {
       id: '2',
-      date: '2025.04.23.수',
-      description: '현재까지 검사상 유의미한 변화는 관찰되지 않으며, 전반적인 상태는 안정적입니다. 향후 상태 유지를 위해 정기적인 내과적 검진을 권장드립니다.',
+      dateLabel: '2025.04.23.수',
       clinicName: '참 좋은병원',
       timeLabel: '2:00 PM',
       deptName: '내과',
       doctorName: '',
       diseaseName: '',
+      summary: '현재까지 검사상 유의미한 변화는 관찰되지 않으며, 전반적인 상태는 안정적입니다. 향후 상태 유지를 위해 정기적인 내과적 검진을 권장드립니다.',
       fullText: '검사 결과를 종합해 보면, 현재까지 이전과 비교하여 의미 있는 변화는 보이지 않으며 ...\n\n평소와 다른 증상이 새로 나타나거나 불편감이 있을 경우...',
       memo: '이번 진료: 이상 없음\n예방 차원 정기 검진 권장',
       hasAudio: false,
@@ -58,9 +58,10 @@ const MainScreen: React.FC = () => {
         <Text style={styles.title}>토닥</Text>
       </View>
 
+      {/* 통일된 데이터를 넘겨줌 */}
       <RecentRecordsSection records={mockRecords} />
 
-      {/* ✅ 탭바 바로 위에 "붙는" 녹음 패널 */}
+      {/* 탭바 바로 위에 "붙는" 녹음 패널 */}
       <View style={styles.recordDock}>
         <RecordPanel />
       </View>
@@ -91,7 +92,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
   },
-
   recordDock: {
     position: 'absolute',
     left: 0,

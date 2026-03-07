@@ -164,7 +164,7 @@ const Mycare: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
-            // navigation.goBack()
+            navigation.navigate('Home' as any);
           }}
           activeOpacity={0.8}
           style={styles.backCircle}
