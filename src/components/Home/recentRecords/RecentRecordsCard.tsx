@@ -1,11 +1,13 @@
 // components/Home/recentRecords/RecentRecordsCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 type RecordItem = {
   id: string;
   date: string;
   description: string;
+  [key: string]: any;
 };
 
 type Props = {
@@ -15,8 +17,8 @@ type Props = {
 const MAX_RECORDS_IN_CARD = 4;
 
 const RecentRecordsCard: React.FC<Props> = ({ records }) => {
-  // ✅ 실제 기록만 (최대 4개)
-  const visible = records.slice(0, MAX_RECORDS_IN_CARD);
+  const navigation = useNavigation<any>();
+  const visible = records.slice(0, MAX_RECORDS_IN_CARD); // 실제 기록만 (최대 4개)
 
   return (
   <View style={styles.card}>
