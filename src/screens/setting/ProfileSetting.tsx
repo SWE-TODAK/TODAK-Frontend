@@ -1,3 +1,4 @@
+// src/screens/setting/ProfileSetting.tsx
 import React, { useMemo, useState, Platform } from 'react';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
@@ -15,41 +16,42 @@ import {
   Keyboard,
   Image,
   Switch,
-  Alert,
   Modal,
   Pressable,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
-const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); // 이메일 오류 판단 기준
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileSetting'>;
 
 export default function ProfileSetting({ navigation }: Props) {
 
-  // ✅ TODO: 나중에 API/스토리지에서 가져오면 됨
   const user = {
     nickname: '토닥',
     email: 'todak@gmail.com',
-    birth: '2004-06-12', // YYYY-MM-DD
+    birth: '2004-06-12',
     sex: 'F' as 'M' | 'F',
-    profileImageUrl: '', // 있으면 { uri: ... } 로 렌더
+    profileImageUrl: '',
   };
 
   const [kakaoEasyLogin, setKakaoEasyLogin] = useState(true);
-  // 카카오 간편 로그인 토글 confirm
   const [kakaoModalVisible, setKakaoModalVisible] = useState(false);
   const [pendingKakaoEasyLogin, setPendingKakaoEasyLogin] = useState<boolean | null>(null);
 
   const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [withdrawVisible, setWithdrawVisible] = useState(false);
+
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+
   const [editing, setEditing] = useState<null | 'nickname' | 'email'>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [nicknameDraft, setNicknameDraft] = useState(user.nickname);
   const [emailDraft, setEmailDraft] = useState(user.email);
 
-  const [birthDraft, setBirthDraft] = useState(user.birth); // "YYYY-MM-DD"
+  const [birthDraft, setBirthDraft] = useState(user.birth);
   const [birthPickerVisible, setBirthPickerVisible] = useState(false);
 
   const [sexDraft, setSexDraft] = useState<'M' | 'F'>(user.sex);
@@ -64,8 +66,6 @@ export default function ProfileSetting({ navigation }: Props) {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setToastVisible(true);
-
-    // 토스트가 "보였다가 사라질 시간"과 맞춰서 false로 내려주기
     setTimeout(() => setToastVisible(false), 1400);
   };
 
@@ -78,9 +78,7 @@ export default function ProfileSetting({ navigation }: Props) {
     return `${y}년 ${m}월 ${d}일`;
   }, [birthDraft]);
 
-  // TODO: API 연결 전 임시 "저장" 시점
   const commitNickname = () => {
-    // 여기서 nicknameDraft 서버 저장 붙이면 됨
     endEdit();
     showToast('저장됐어요');
   };
@@ -100,27 +98,23 @@ export default function ProfileSetting({ navigation }: Props) {
 
     if (!isValidEmail(v)) {
       setEmailError('올바른 이메일을 입력해주세요');
-      setEditing('email'); // 계속 편집 상태 유지
+      setEditing('email');
       return;
     }
 
     setEmailError(null);
-    // TODO: v 저장 API
     endEdit();
     showToast('저장됐어요');
   };
 
   const onChangeEmailDraft = (v: string) => {
     setEmailDraft(v);
-
-    // 에러가 떠있는 상태라면 입력 시작하면 지워주기
     if (emailError) {
       setEmailError(null);
     }
   };
 
   const onEditBirth = () => {
-    // 인라인 편집 중이면 저장/종료부터
     if (editing === 'nickname') commitNickname();
     if (editing === 'email') commitEmail();
 
@@ -128,7 +122,6 @@ export default function ProfileSetting({ navigation }: Props) {
   };
 
   const onEditSex = () => {
-    // 인라인 편집 중이면 저장/종료부터
     if (editing === 'nickname') commitNickname();
     if (editing === 'email') commitEmail();
 
@@ -143,8 +136,6 @@ export default function ProfileSetting({ navigation }: Props) {
 
     setSexDraft(next);
     setSexModalVisible(false);
-
-    // TODO: 서버 저장 API 붙일 자리
     showToast('저장됐어요');
   };
 
@@ -152,38 +143,7 @@ export default function ProfileSetting({ navigation }: Props) {
     if (editing === 'nickname') commitNickname();
     if (editing === 'email') commitEmail();
 
-    Alert.alert('프로필 사진', '프로필 사진을 변경할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '갤러리에서 선택',
-        onPress: async () => {
-          const result = await launchImageLibrary({
-            mediaType: 'photo',
-            selectionLimit: 1,
-            quality: 0.9,
-          });
-          if (result.didCancel) return;
-          const asset = result.assets?.[0];
-          const uri = asset?.uri;
-          if (!uri) return showToast('이미지를 불러오지 못했어요');
-
-          setProfileImageUri(uri);
-          showToast('저장됐어요');
-        },
-      },
-      ...(profileImageUri
-        ? [
-            {
-              text: '사진 삭제',
-              style: 'destructive' as const,
-              onPress: () => {
-                setProfileImageUri(null);
-                showToast('저장됐어요');
-              },
-            },
-          ]
-        : []),
-    ]);
+    setProfileModalVisible(true);
   };
 
   const onToggleKakaoEasyLogin = (next: boolean) => {
@@ -196,22 +156,15 @@ export default function ProfileSetting({ navigation }: Props) {
 
   const confirmKakaoEasyLogin = async () => {
     if (pendingKakaoEasyLogin === null) return;
-
     const next = pendingKakaoEasyLogin;
 
     setKakaoModalVisible(false);
     setPendingKakaoEasyLogin(null);
 
     try {
-      // TODO: 서버 API 연결/해제
-      // next === true  -> 카카오 연결
-      // next === false -> 카카오 연결 해제
-      // await api.linkKakao() / await api.unlinkKakao()
-
       setKakaoEasyLogin(next);
       showToast(next ? '카카오 간편 로그인이 연결됐어요' : '카카오 간편 로그인이 해제됐어요');
     } catch (e) {
-      // 실패 시 스위치 변경 안 함
       showToast('처리 중 오류가 발생했어요');
     }
   };
@@ -237,7 +190,7 @@ export default function ProfileSetting({ navigation }: Props) {
     <TouchableWithoutFeedback
       onPress={() => {
           if (birthPickerVisible) return;
-          Keyboard.dismiss();     // 키보드 내림
+          Keyboard.dismiss();
           if (editing === 'nickname') commitNickname();
           if (editing === 'email') commitEmail();
       }}
@@ -308,7 +261,7 @@ export default function ProfileSetting({ navigation }: Props) {
             editable
             isEditing={editing === 'email'}
             onStartEdit={startEditEmail}
-            onChangeText={onChangeEmailDraft}   // ✅ 이 함수 사용
+            onChangeText={onChangeEmailDraft}
             onClear={() => setEmailDraft('')}
             onSubmit={commitEmail}
             keyboardType="email-address"
@@ -317,7 +270,7 @@ export default function ProfileSetting({ navigation }: Props) {
           <InfoRow label="생년월일" value={birthLabel} onPressEdit={onEditBirth} />
           <InfoRow label="성별" value={sexLabel} onPressEdit={onEditSex} />
 
-          {/* 카카오 간편 로그인 (스위치) */}
+          {/* 카카오 간편 로그인 */}
           <View style={[styles.row, { marginTop: 6 }]}>
             <Text style={styles.rowLabel}>카카오 간편 로그인</Text>
             <View style={styles.rowRight}>
@@ -359,6 +312,48 @@ export default function ProfileSetting({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+
+            {/* ✅ 프로필 사진 변경 모달 */}
+            <ConfirmModal
+              visible={profileModalVisible}
+              title="프로필 사진"
+              message={profileImageUri ? "프로필 사진을 변경하거나 삭제하시겠습니까?" : "새로운 프로필 사진을 설정하시겠습니까?"}
+
+              // ✅ 1. 사진 유무에 따라 취소 버튼 텍스트 변경
+              cancelText={profileImageUri ? "사진 삭제" : "취소"}
+              confirmText="사진 선택"
+
+              // ✅ 2. 모달창 바깥 터치 시 무조건 취소(모달 닫기)
+              onBackdropPress={() => setProfileModalVisible(false)}
+
+              onCancel={() => {
+                if (profileImageUri) {
+                  // ✅ 기존 사진이 있으면 '사진 삭제' 동작
+                  setProfileImageUri(null);
+                  setProfileModalVisible(false);
+                  showToast('기본 이미지로 변경됐어요');
+                } else {
+                  // ✅ 사진이 없으면 '취소' 동작
+                  setProfileModalVisible(false);
+                }
+              }}
+              onConfirm={async () => {
+                setProfileModalVisible(false);
+                const result = await launchImageLibrary({
+                  mediaType: 'photo',
+                  selectionLimit: 1,
+                  quality: 0.9,
+                });
+                if (result.didCancel) return;
+                const asset = result.assets?.[0];
+                const uri = asset?.uri;
+                if (!uri) return showToast('이미지를 불러오지 못했어요');
+
+                setProfileImageUri(uri);
+                showToast('저장됐어요');
+              }}
+            />
+
             {/* 비밀번호 변경 동의 모달 */}
             <EmailAuthConsentModal
               visible={consentVisible}
@@ -385,7 +380,6 @@ export default function ProfileSetting({ navigation }: Props) {
               }
               cancelText="취소"
               confirmText="확인"
-              // 해제는 위험 행동 느낌이 있으니 빨간색, 연결은 기본 색(네 ConfirmModal 기본값 없으면 여기서 지정 안 해도 됨)
               confirmColor={pendingKakaoEasyLogin ? undefined : '#EF4444'}
               onCancel={cancelKakaoEasyLogin}
               onConfirm={confirmKakaoEasyLogin}
@@ -417,11 +411,11 @@ export default function ProfileSetting({ navigation }: Props) {
               onCancel={() => setWithdrawVisible(false)}
               onConfirm={() => {
                 setWithdrawVisible(false);
-                // TODO: 탈퇴 API 호출 후 처리
                 navigation.replace('Login');
               }}
             />
           <Toast visible={toastVisible} message={toastMessage} />
+
           {birthPickerVisible && (
             <DateTimePicker
               value={toDate(birthDraft)}
@@ -429,7 +423,6 @@ export default function ProfileSetting({ navigation }: Props) {
               display="default"
               maximumDate={new Date()}
               onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
-                // Android는 선택/취소 후 onChange가 호출되고, 여기서 닫아줘야 함
                 setBirthPickerVisible(false);
 
                 if (event.type === 'dismissed') return;
@@ -440,11 +433,11 @@ export default function ProfileSetting({ navigation }: Props) {
                 if (next !== birthDraft) {
                   setBirthDraft(next);
                   showToast('저장됐어요');
-                  // TODO: 서버 저장 API 붙일 자리
                 }
               }}
             />
           )}
+
           <SexPickerModal
             visible={sexModalVisible}
             value={sexDraft}
@@ -505,8 +498,8 @@ function InfoRow({
                 autoCorrect={false}
                 returnKeyType="done"
                 blurOnSubmit
-                onSubmitEditing={onSubmit} // ✅ Enter -> 저장
-                onBlur={onSubmit}          // ✅ blur -> 저장
+                onSubmitEditing={onSubmit}
+                onBlur={onSubmit}
               />
 
               <TouchableOpacity
@@ -544,7 +537,6 @@ function InfoRow({
         </View>
       </View>
 
-      {/* ✅ 이메일 형식 에러 메시지 */}
       {!!errorText && <Text style={styles.inlineErrorText}>{errorText}</Text>}
     </View>
   );
@@ -563,9 +555,7 @@ function SexPickerModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        {/* backdrop 눌렀을 때만 닫히게 */}
-      </Pressable>
+      <Pressable style={styles.modalBackdrop} onPress={onClose}></Pressable>
 
       <View style={styles.sheetWrap} pointerEvents="box-none">
         <View style={styles.sheet}>
@@ -603,7 +593,6 @@ function SexPickerModal({
 }
 
 function toDate(ymd: string) {
-  // ymd가 비정상이어도 안전한 기본값 사용
   const parts = (ymd || '').split('-').map(Number);
   const y = parts[0] || 2000;
   const m = (parts[1] || 1) - 1;
@@ -721,9 +710,7 @@ const styles = StyleSheet.create({
     maxWidth: 220,
     textAlign: 'left',
   },
-  rowBlock: {
-    // 한 row + 에러텍스트를 묶는 wrapper
-  },
+  rowBlock: {},
   inlineErrorText: {
     marginTop: 6,
     color: '#FF0000',
@@ -761,7 +748,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#D1D5DB', // 스샷처럼 회색 동그라미 느낌
+    backgroundColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
