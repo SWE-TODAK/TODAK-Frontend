@@ -12,19 +12,17 @@ import {
   Animated,
 } from 'react-native';
 
+import { MetricInputFieldConfig } from '../types/healthMetric.types';
+
 import DatePicker from 'react-native-date-picker';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   title: string;
-
-  // 혈압 2개 필드 (다른 지표는 다음 단계에서 확장)
-  systolic: string;
-  diastolic: string;
-  onChangeSystolic: (v: string) => void;
-  onChangeDiastolic: (v: string) => void;
-
+  inputFields: MetricInputFieldConfig[];
+  values: Record<string, string>;
+  onChangeValue: (key: string, value: string) => void;
   onSubmit: () => void;
 };
 
@@ -32,10 +30,9 @@ export default function MetricInputModal({
   visible,
   onClose,
   title,
-  systolic,
-  diastolic,
-  onChangeSystolic,
-  onChangeDiastolic,
+  inputFields,
+  values,
+  onChangeValue,
   onSubmit,
 }: Props) {
   const slide = useRef(new Animated.Value(0)).current;
@@ -96,33 +93,22 @@ export default function MetricInputModal({
                 }}
                 onCancel={() => setDateOpen(false)}
                 />
-            <View style={styles.form}>
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>수축</Text>
+           <View style={styles.form}>
+            {inputFields.map((field, index) => (
+              <View key={field.key} style={styles.inputRow}>
+                <Text style={styles.inputLabel}>{field.label}</Text>
                 <TextInput
-                  value={systolic}
-                  onChangeText={onChangeSystolic}
-                  placeholder="예: 120"
-                  keyboardType="number-pad"
+                  value={values[field.key] ?? ''}
+                  onChangeText={(text) => onChangeValue(field.key, text)}
+                  placeholder={field.placeholder ?? ''}
+                  keyboardType={field.keyboardType ?? 'numeric'}
                   style={styles.input}
-                  returnKeyType="next"
+                  returnKeyType={index === inputFields.length - 1 ? 'done' : 'next'}
                 />
-                <Text style={styles.unit}>mmHg</Text>
+                <Text style={styles.unit}>{field.unit ?? ''}</Text>
               </View>
-
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>이완</Text>
-                <TextInput
-                  value={diastolic}
-                  onChangeText={onChangeDiastolic}
-                  placeholder="예: 80"
-                  keyboardType="number-pad"
-                  style={styles.input}
-                  returnKeyType="done"
-                />
-                <Text style={styles.unit}>mmHg</Text>
-              </View>
-            </View>
+            ))}
+          </View>
 
             <Pressable style={styles.submitBtn} onPress={onSubmit}>
               <Text style={styles.submitText}>완료</Text>
@@ -201,10 +187,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   inputLabel: {
-    width: 44,
+    minWidth: 88,
     color: '#111827',
     fontSize: 16,
     fontWeight: '800',
+    marginRight: 8,
   },
   input: {
     flex: 1,

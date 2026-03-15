@@ -2,18 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 
 type Props = {
-  title?: string;
-  description?: string[];
+  title: string;
+  lines: string[];
 };
 
-export default function ResultCard({
-  title = '혈압 진단 결과',
-  description = [
-    '최근 3회 측정 모두 정상 범위입니다.',
-    '수축기 평균 121mmHg, 이완기 평균 79mmHg로 안정적인 상태예요.',
-    '지금처럼 규칙적인 식습관과 가벼운 운동을 유지하세요 💚',
-  ],
-}: Props) {
+export default function ResultCard({ title, lines }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -26,7 +19,7 @@ export default function ResultCard({
       </View>
 
       <View style={styles.body}>
-        {description.map((text, idx) => (
+        {lines.map((text, idx) => (
           <Text key={idx} style={styles.text}>
             {text}
           </Text>
