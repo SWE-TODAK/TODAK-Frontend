@@ -1,6 +1,6 @@
 // src/screens/HealthMetric.tsx
 import React, { useMemo, useState, useRef ,useEffect} from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, UIManager, findNodeHandle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, UIManager, findNodeHandle,ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +15,8 @@ import MetricInputModal from '../../components/Health/chart-ui/MetricInputModal'
 
 import RecentRecordFilter from '../../components/Health/RecentRecordFilter';
 import RecordFilterModal from '../../components/Health/RecordFilterModal';
+
+import ResultCard from '../../components/Health/ResultCard';
 
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
@@ -183,9 +185,13 @@ const HealthMetric: React.FC = () => {
       </View>
 
       {/* 바디 */}
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        showsVerticalScrollIndicator={false}
+      >
         <MetricChartCard
-          title="수축·이완(mmHg)"
+          category={category}
           onPressInfo={openInfo}
           onPressAdd={() => {
             console.log('ADD PRESSED');
@@ -220,12 +226,8 @@ const HealthMetric: React.FC = () => {
                   console.log('selected point:', point);
 
                   setTooltip((prev) => {
-                    if (
-                      prev &&
-                      prev.index === point.index &&
-                      prev.key === point.key
-                    ) {
-                      return null; // 같은 점이면 닫기
+                    if (prev && prev.index === point.index && prev.key === point.key) {
+                      return null;
                     }
                     return point;
                   });
@@ -250,7 +252,9 @@ const HealthMetric: React.FC = () => {
           />
         </MetricChartCard>
 
-      </View>
+        <ResultCard />
+      </ScrollView>
+
       {tooltip && (
          <TouchableOpacity
             activeOpacity={1}
@@ -347,9 +351,12 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   body: {
-    flex: 1,
-    paddingTop: 5,
-  },
+  flex: 1,
+},
+bodyContent: {
+  paddingTop: 5,
+  paddingBottom: 32,
+},
   cardMargin: {
     marginHorizontal: 20,
   },

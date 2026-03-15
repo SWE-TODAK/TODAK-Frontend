@@ -3,20 +3,19 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import InfoButton from './InfoButton';
 import AddButton from './AddButton';
-import ChartTitle from './ChartTitle';
+import ChartTitle, { ChartTitleCategory } from './ChartTitle';
 
 type Props = {
-  title: string;
+  category: ChartTitleCategory;
   onPressInfo?: () => void;
   onPressAdd?: () => void;
   children: React.ReactNode;
   style?: ViewStyle;
-
-  infoRef?: React.Ref<any>; // ✅ 타입은 일단 any로 (안정적으로)
+  infoRef?: React.Ref<any>;
 };
 
 export default function MetricChartCard({
-  title,
+  category,
   onPressInfo,
   onPressAdd,
   children,
@@ -27,7 +26,7 @@ export default function MetricChartCard({
     <View style={[styles.card, style]}>
       <View style={styles.header}>
         <InfoButton ref={infoRef} onPress={onPressInfo} />
-        <ChartTitle title={title} />
+        <ChartTitle category={category} />
         <AddButton onPress={onPressAdd} />
       </View>
 
