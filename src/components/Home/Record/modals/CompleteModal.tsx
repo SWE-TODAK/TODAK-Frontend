@@ -7,9 +7,10 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
-  KeyboardAvoidingView,
   Platform,
   Image,
+  Keyboard,
+  Dimensions,
 } from 'react-native';
 
 type Props = {
@@ -44,18 +45,22 @@ const CompleteModal: React.FC<Props> = ({
   const [showDeptList, setShowDeptList] = useState(false);
   const [isCustomDept, setIsCustomDept] = useState(false);
 
-  const departmentOptions = [
-  '내과',
-  '이비인후과',
-  '안과',
-  '피부과',
-  '정형외과',
-  '산부인과',
-  '치과',
-  '직접 입력',
-];
+  // ✅ 키보드 회피 로직을 위한 상태
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [cardHeight, setCardHeight] = useState(0);
 
-  // 모달 열릴 때 초기화(원하면 제거 가능)
+  const departmentOptions = [
+    '내과',
+    '이비인후과',
+    '안과',
+    '피부과',
+    '정형외과',
+    '산부인과',
+    '치과',
+    '직접 입력',
+  ];
+
+  // 1) 모달 열릴 때 초기화
   useEffect(() => {
     if (visible) {
       setHospital('');
@@ -63,8 +68,47 @@ const CompleteModal: React.FC<Props> = ({
       setDoctor('');
       setDepartment('');
       setTitle(dateText);
+      setKeyboardHeight(0);
+      setShowDeptList(false);
+      setIsCustomDept(false);
     }
   }, [visible, dateText]);
+
+  // 2) 키보드 높이 추적
+  useEffect(() => {
+    if (!visible) return;
+
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible]);
+
+  // 3) "필요한 만큼만" 올리기 계산
+  const translateY = useMemo(() => {
+    if (!keyboardHeight || !cardHeight) return 0;
+
+    const screenH = Dimensions.get('window').height;
+
+    // 가운데 배치 기준일 때 카드 bottom 위치
+    const centeredBottom = (screenH + cardHeight) / 2;
+
+    // 키보드 위 20px 지점
+    const targetBottom = screenH - keyboardHeight - 20;
+
+    // 겹치면 겹친 만큼만 위로 올림
+    const overlap = centeredBottom - targetBottom;
+
+    return overlap > 0 ? -overlap : 0;
+  }, [keyboardHeight, cardHeight]);
 
   // ✅ 병원만 필수
   const canSubmit = useMemo(() => hospital.trim().length > 0, [hospital]);
@@ -87,14 +131,16 @@ const CompleteModal: React.FC<Props> = ({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={() => {
-      }}
+      onRequestClose={() => {}}
     >
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.card}>
+      {/* 바깥 터치 시 키보드 내리기 */}
+      <Pressable style={styles.backdrop} onPress={Keyboard.dismiss} />
+
+      <View style={styles.centerWrap} pointerEvents="box-none">
+        <View
+          style={[styles.card, { transform: [{ translateY }] }]}
+          onLayout={(e) => setCardHeight(e.nativeEvent.layout.height)}
+        >
           <Text style={styles.headerBlue}>진료 녹음이 완료되었어요</Text>
 
           <Text style={styles.date}>{dateText ?? ''}</Text>
@@ -137,12 +183,15 @@ const CompleteModal: React.FC<Props> = ({
               style={styles.input}
             />
 
-           <Text style={[styles.label, { marginLeft: 16 }]}>진료과</Text>
+            <Text style={[styles.label, { marginLeft: 16 }]}>진료과</Text>
 
             <View style={{ flex: 1 }}>
               <Pressable
                 style={[styles.inputRight, styles.dropdownBox]}
-                onPress={() => setShowDeptList(prev => !prev)}
+                onPress={() => {
+                  Keyboard.dismiss(); // 드롭다운 열 때 키보드 내리기
+                  setShowDeptList((prev) => !prev);
+                }}
               >
                 {isCustomDept ? (
                   <TextInput
@@ -151,6 +200,7 @@ const CompleteModal: React.FC<Props> = ({
                     placeholder="입력"
                     placeholderTextColor="#B5BED5"
                     style={styles.deptInputInside}
+                    autoFocus
                   />
                 ) : (
                   <Text style={{ color: department ? '#111' : 'transparent' }}>
@@ -166,7 +216,7 @@ const CompleteModal: React.FC<Props> = ({
 
               {showDeptList && (
                 <View style={styles.dropdownList}>
-                  {departmentOptions.map(option => (
+                  {departmentOptions.map((option) => (
                     <Pressable
                       key={option}
                       style={styles.dropdownItem}
@@ -175,7 +225,7 @@ const CompleteModal: React.FC<Props> = ({
                           setIsCustomDept(true);
                           setDepartment('');
                         } else {
-                          setIsCustomDept(false);   // ✅ 다시 선택모드로 복귀
+                          setIsCustomDept(false);
                           setDepartment(option);
                         }
                         setShowDeptList(false);
@@ -213,7 +263,7 @@ const CompleteModal: React.FC<Props> = ({
             <Text style={styles.submitText}>완료</Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -222,13 +272,15 @@ export default CompleteModal;
 
 const styles = StyleSheet.create({
   backdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
+  },
+  centerWrap: {
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
   },
-
   card: {
     width: '100%',
     maxWidth: 520,
@@ -365,7 +417,7 @@ const styles = StyleSheet.create({
 
   dropdownList: {
     position: 'absolute',
-    top: 44,          // ✅ inputRight(40) + 약간(4)
+    top: 44,
     left: 0,
     right: 0,
 
@@ -376,7 +428,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
 
     zIndex: 999,
-    elevation: 10,    // ✅ Android에서 위로 뜨게
+    elevation: 10,
   },
 
   dropdownItem: {
@@ -385,7 +437,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F2F7',
   },
-   deptInputInside: {
+  deptInputInside: {
     flex: 1,
     height: 40,
     paddingLeft: 0,
