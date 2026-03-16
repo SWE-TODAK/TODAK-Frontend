@@ -1,11 +1,12 @@
 // src/screens/Health.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -13,12 +14,12 @@ import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import MyHealthMetricsSection from '../../components/Health/health-home/MyHealthMetricsSection.tsx';
+import CreateCustomMetricSection, {
+  CustomHealthMetricItem,
+} from '../../components/Health/health-home/CreateCustomMetricSection';
 import { MainTabParamList } from '../../navigation/MainTabNavigator';
 
-type HealthScreenNavProp = BottomTabNavigationProp<
-  MainTabParamList,
-  'MyHealth'
->;
+type HealthScreenNavProp = BottomTabNavigationProp<MainTabParamList, 'MyHealth'>;
 
 type HealthNavProp = NativeStackNavigationProp<
   HealthStackParamList,
@@ -26,14 +27,23 @@ type HealthNavProp = NativeStackNavigationProp<
 >;
 
 const MyHealth: React.FC = () => {
- const tabNav = useNavigation<HealthScreenNavProp>();
- const stackNav = useNavigation<HealthNavProp>();
-  
+  const tabNav = useNavigation<HealthScreenNavProp>();
+  const stackNav = useNavigation<HealthNavProp>();
   const insets = useSafeAreaInsets();
+
+  const [customMetrics, setCustomMetrics] = useState<CustomHealthMetricItem[]>([]);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+
+  const handleCreateCustomMetric = (item: CustomHealthMetricItem) => {
+    setCustomMetrics(prev => [...prev, item]);
+  };
+
+  const handleDeleteCustomMetric = (id: string) => {
+    setCustomMetrics(prev => prev.filter(item => item.id !== id));
+  }
 
   return (
     <View style={styles.root}>
-      {/* 헤더 (상태바 포함) */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
@@ -46,31 +56,46 @@ const MyHealth: React.FC = () => {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>건강지표</Text>
-
-        {/* 오른쪽 빈 공간 */}
         <View style={{ width: 32 }} />
       </View>
 
-      {/* ✅ 헤더 "아래"에 그림자 바 */}
       <View style={styles.headerShadow} />
 
-      <MyHealthMetricsSection
-        onPressItem={(category) => {
-          const titleMap: Record<string, string> = {
-            kidney: '신장 기능 (선택)',
-            lipid: '지질 · 콜레스테롤',
-            body: '체형 · 신체',
-            bloodPressure: '혈압 · 심혈관',
-            liver: '간 기능',
-            bloodSugar: '혈당 · 당뇨',
-          };
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <MyHealthMetricsSection
+          customItems={customMetrics}
+          isDeleteMode={isDeleteMode}
+          onToggleDeleteMode={() => setIsDeleteMode(prev => !prev)}
+          onPressItem={(category) => {
+            const titleMap: Record<string, string> = {
+              kidney: '신장 기능 (선택)',
+              lipid: '지질 · 콜레스테롤',
+              body: '체형 · 신체',
+              bloodPressure: '혈압 · 심혈관',
+              liver: '간 기능',
+              bloodSugar: '혈당 · 당뇨',
+            };
 
-          stackNav.navigate('HealthMetric', {
-            category,
-            title: titleMap[category],
-          });
-        }}
-      />
+            stackNav.navigate('HealthMetric', {
+              category,
+              title: titleMap[category],
+            });
+          }}
+          onPressCustomItem={(item) => {
+            console.log('custom metric pressed:', item);
+            // TODO: 커스텀 지표 상세 화면 연결 예정
+          }}
+          onDeleteCustomItem={handleDeleteCustomMetric}
+        />
+
+        <CreateCustomMetricSection
+          onCreateMetric={handleCreateCustomMetric}
+        />
+      </ScrollView>
     </View>
   );
 };
@@ -82,15 +107,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(236, 242, 252, 0.8)',
   },
-    header: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
   },
-
-  // ✅ 아래에만 보이게 만드는 "그림자 전용 바"
   headerShadow: {
     height: 0.5,
     backgroundColor: '#CCD1DA',
@@ -114,4 +137,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
+
+
 });
