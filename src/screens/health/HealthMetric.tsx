@@ -25,11 +25,19 @@ import { HEALTH_METRIC_CONFIG } from '../../components/Health/healthMetricConfig
 import {
   bloodPressureMockRecords,
   bloodSugarMockRecords,
+  liverMockRecords,
+  kidneyMockRecords,
+  lipidMockRecords,
+  bodyMockRecords,
 } from '../../components/Health/chart-core/healthMetricMockData.ts';
 
 import {
   buildBloodPressureChartSeries,
   buildBloodSugarChartSeries,
+  buildLiverChartSeries,
+  buildKidneyChartSeries,
+  buildLipidChartSeries,
+  buildBodyChartSeries,
   buildChartZones,
 } from '../../components/Health/chart-core/healthMetricChartData';
 
@@ -93,6 +101,10 @@ const HealthMetric: React.FC = () => {
   // ------------------------------
   const safeBloodPressureRecords = bloodPressureMockRecords ?? [];
   const safeBloodSugarRecords = bloodSugarMockRecords ?? [];
+  const safeLiverRecords = liverMockRecords ?? [];
+  const safeKidneyRecords = kidneyMockRecords ?? [];
+  const safeLipidRecords = lipidMockRecords ?? [];
+  const safeBodyRecords = bodyMockRecords ?? [];
   const displayRecords: DisplayRecord[] = useMemo(() => {
     switch (category) {
       case 'bloodPressure': {
@@ -111,6 +123,46 @@ const HealthMetric: React.FC = () => {
           recordFilter === 'all'
             ? safeBloodSugarRecords
             : safeBloodSugarRecords.slice(-recordFilter);
+
+        return records.map(record => ({
+          xLabel: record.xLabel,
+        }));
+      }
+      case 'liver': {
+        const records =
+          recordFilter === 'all'
+            ? safeLiverRecords
+            : safeLiverRecords.slice(-recordFilter);
+
+        return records.map(record => ({
+          xLabel: record.xLabel,
+        }));
+      }
+      case 'kidney': {
+        const records =
+          recordFilter === 'all'
+            ? safeKidneyRecords
+            : safeKidneyRecords.slice(-recordFilter);
+
+        return records.map(record => ({
+          xLabel: record.xLabel,
+        }));
+      }
+      case 'lipid': {
+        const records =
+          recordFilter === 'all'
+            ? safeLipidRecords
+            : safeLipidRecords.slice(-recordFilter);
+
+        return records.map(record => ({
+          xLabel: record.xLabel,
+        }));
+      }
+      case 'body': {
+        const records =
+          recordFilter === 'all'
+            ? safeBodyRecords
+            : safeBodyRecords.slice(-recordFilter);
 
         return records.map(record => ({
           xLabel: record.xLabel,
@@ -144,6 +196,39 @@ const HealthMetric: React.FC = () => {
             : safeBloodSugarRecords.slice(-recordFilter);
 
         return buildBloodSugarChartSeries(records, config.series);
+      }
+
+      case 'liver': {
+        const records =
+          recordFilter === 'all'
+            ? safeLiverRecords
+            : safeLiverRecords.slice(-recordFilter);
+
+        return buildLiverChartSeries(records, config.series);
+      }
+      case 'kidney': {
+        const records =
+          recordFilter === 'all'
+            ? safeKidneyRecords
+            : safeKidneyRecords.slice(-recordFilter);
+
+        return buildKidneyChartSeries(records, config.series);
+      }
+      case 'lipid': {
+        const records =
+          recordFilter === 'all'
+            ? safeLipidRecords
+            : safeLipidRecords.slice(-recordFilter);
+
+        return buildLipidChartSeries(records, config.series);
+      }
+      case 'body': {
+        const records =
+          recordFilter === 'all'
+            ? safeBodyRecords
+            : safeBodyRecords.slice(-recordFilter);
+
+        return buildBodyChartSeries(records, config.series);
       }
 
       default:
