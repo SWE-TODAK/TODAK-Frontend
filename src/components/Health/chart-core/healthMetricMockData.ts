@@ -20,7 +20,7 @@ export type BloodSugarRecord = {
 };
 
 export const bloodSugarMockRecords: BloodSugarRecord[] =
-  Array.from({ length: 10 }).map((_, i) => ({
+  Array.from({ length: 25 }).map((_, i) => ({
     xLabel: String(i + 1),
     glucose: 85 + Math.round(Math.random() * 40),
   }));

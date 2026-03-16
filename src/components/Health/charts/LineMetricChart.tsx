@@ -99,8 +99,15 @@ export default function LineMetricChart({
   const chartW = Math.max(1, width - paddingLeft - paddingRight);
   const chartH = Math.max(1, height - paddingTop - paddingBottom);
 
-  const n = Math.max(0, ...series.map((s) => s.data.length), 0);
+  const DENSE_DATA_THRESHOLD = 22;
 
+  function clamp(n: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, n));
+  }
+
+  const n = Math.max(0, ...series.map((s) => s.data.length), 0);
+  const hideDenseDetails = n >= DENSE_DATA_THRESHOLD;
+  
   const yToPx = (v: number) => {
     const vv = clamp(v, yMin, yMax);
     const t = (vv - yMin) / (yMax - yMin);
@@ -162,8 +169,9 @@ export default function LineMetricChart({
             );
           })}
 
-        {/* x grid */}
+       {/* x grid */}
         {showXGrid &&
+          !hideDenseDetails &&
           xGridIdxs.map((idx) => {
             const x = xToPx(idx);
             return (
@@ -182,6 +190,7 @@ export default function LineMetricChart({
 
         {/* x labels */}
         {showXLabels &&
+          !hideDenseDetails &&
           xLabels.map((d, i) => {
             const x = xToPx(i);
             const y = paddingTop + chartH + 18;
@@ -227,7 +236,8 @@ export default function LineMetricChart({
                 fill="none"
               />
 
-              {s.pts.map((p, i) => {
+              {!hideDenseDetails &&
+              s.pts.map((p, i) => {
                 const pointData = s.data[i];
                 return (
                   <Circle
