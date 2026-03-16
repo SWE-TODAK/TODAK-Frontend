@@ -9,9 +9,12 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert
 } from 'react-native';
+import { publicApi }from '../../api/axios';
+import { saveAccessToken, saveRefreshToken, saveUser } from '../../utils/authStorage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpBirth'>;
 
@@ -37,6 +40,7 @@ export default function SignUpBirth({ navigation, route }: Props) {
   const email = route.params?.email ?? '';
   const name = route.params?.name ?? '';
   const sex = route.params?.sex ?? 'M';
+  const password = route.params?.password ?? '';
 
   const [birth, setBirth] = useState('');
   const [touched, setTouched] = useState(false);
@@ -66,11 +70,60 @@ export default function SignUpBirth({ navigation, route }: Props) {
     setBirth(onlyDigits.slice(0, 8));
   };
 
-  const onContinue = () => {
-    if (!canContinue) return;
+  const onContinue = async () => {
+  if (!canContinue) return;
 
-    navigation.navigate('SignUpSuccess', { email, name, sex, birth: trimmed });
+  if (!password) {
+    Alert.alert('비밀번호 정보가 없습니다. 이전 단계부터 다시 진행해 주세요.');
+    return;
+  }
+
+  // YYYYMMDD -> YYYY-MM-DD
+  const birthDate = `${trimmed.slice(0, 4)}-${trimmed.slice(4, 6)}-${trimmed.slice(6, 8)}`;
+
+  // 'M' | 'F' -> 'MALE' | 'FEMALE'
+  const gender = sex === 'M' ? 'MALE' : 'FEMALE';
+
+  const payload = {
+    email,
+    password,
+    nickname: name || email,      // ✅ 테스트용: 일단 name으로 채우기
+    name: name || null,
+    birthDate,
+    gender,
+    profileImageUrl: null,
+    consents: [
+      { consentType: 'TERMS', agreed: true, version: 'v1.0', source: 'SIGNUP' },
+      { consentType: 'PRIVACY', agreed: true, version: 'v1.0', source: 'SIGNUP' },
+      { consentType: 'MARKETING', agreed: false, version: 'v1.0', source: 'SIGNUP' },
+    ],
   };
+  
+  console.log('signup payload:', payload);
+
+  try {
+    const res = await publicApi.post('/auth/local/signup', payload);
+
+    const { accessToken, refreshToken, user } = res.data ?? {};
+    
+
+    if (accessToken) await saveAccessToken(accessToken);
+    if (refreshToken) await saveRefreshToken(refreshToken);
+    if (user) await saveUser(user);
+
+    // ✅ 성공했을 때만 성공 화면으로
+    navigation.navigate('SignUpSuccess', { email, name, sex, birth: trimmed });
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    const message = err?.message;
+
+    console.log('signup error status:', status);
+    console.log('signup error data:', data);
+    console.log('signup error message:', message);
+
+  }
+};
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -240,3 +293,4 @@ const styles = StyleSheet.create({
   },
   continueImage: { width: '100%', height: '100%' },
 });
+

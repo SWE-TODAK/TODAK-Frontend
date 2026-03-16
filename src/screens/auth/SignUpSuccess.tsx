@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpSuccess'>;
 
@@ -57,7 +57,7 @@ export default function SignUpSuccess({ navigation, route }: Props) {
               // ✅ 로그인 화면으로 이동 (뒤로가기 스택 제거)
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'LocalLogin', params: { email } }],
+                routes: [{ name: 'LocalLogin', params: { email, mode: 'login' } }],
               });
             }}
             style={styles.btnWrap}

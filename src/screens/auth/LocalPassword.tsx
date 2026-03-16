@@ -13,8 +13,10 @@ import {
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
+import api from '../../api/axios';
+import { saveAccessToken, saveRefreshToken, saveUser } from '../../utils/authStorage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LocalPassword'>;
 
@@ -58,21 +60,31 @@ export default function LocalPassword({ navigation, route }: Props) {
     setLoginError(null);
 
     try {
-      // ✅ TODO: 나중에 axios로 교체
-      // await axios.post('/auth/login', { email, password: trimmed });
+      const res = await api.post('/auth/local/login', {
+      email,
+      password: trimmed,
+    });
 
-      // ---- MOCK 실패 예시 ----
-      await new Promise((r) => setTimeout(r, 600));
-      const ok = trimmed === '123456'; // 임시 성공 조건
-      if (!ok) {
-        throw new Error('INVALID_PASSWORD');
-      }
+    const accessToken = res.data?.token?.accessToken;
+    const refreshToken = res.data?.token?.refreshToken;
+    console.log('🟢 accessToken:', accessToken);
+    console.log('🟢 refreshToken:', refreshToken);
+    const user = res.data?.user;
 
-      // ✅ 성공: MainTabs or MainScreen 이동
-      navigation.replace('MainTabs');
+    if (!accessToken || !refreshToken) {
+      console.error('❌ 토큰 누락:', res.data);
+      return;
+    }
+
+    await saveAccessToken(accessToken);
+    await saveRefreshToken(refreshToken);
+    if (user) await saveUser(user);
+
+    navigation.replace('MainTabs');
     } catch (e: any) {
-      // 실패 UX
-      setLoginError('비밀번호가 올바르지 않아요');
+      const status = e?.response?.status;
+      if (status === 401) setLoginError('비밀번호가 올바르지 않아요');
+      else setLoginError('로그인에 실패했어요. 잠시 후 다시 시도해 주세요');
     } finally {
       setIsSubmitting(false);
     }

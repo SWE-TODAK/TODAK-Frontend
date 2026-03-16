@@ -17,6 +17,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+<<<<<<< HEAD
+import { getAccessToken } from '../utils/authStorage';
+import { startKakaoLogin, kakaoLoginToBackend } from '../utils/kakaoAuth';
+=======
 // ✅ 백엔드 호출 & 토큰 저장
 import api from '../api/axios';
 // ✅ 카카오 로그인 유틸 (start만 사용)
@@ -29,6 +33,7 @@ import {
 
 // ✅ 카카오 로그인 유틸 (start만 사용)
 import { startKakaoLogin } from '../utils/kakaoAuth';
+>>>>>>> main
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
 import LoginIntro2 from '../components/Login/LoginIntro2';
@@ -39,17 +44,13 @@ type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 const TOTAL_PAGES = 2;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ✅ 렌더마다 바뀌지 않는 상수는 밖으로
-const REDIRECT_URI =
-  'https://todak-backend-705x.onrender.com/oauth/callback/kakao';
-
 const Login: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView | null>(null);
   const currentIndexRef = useRef(0);
   const navigation = useNavigation<LoginNavProp>();
 
-  // ✅ 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
+  // 앱 켰을 때 이미 토큰이 있으면 바로 MainTabs로 이동
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
@@ -66,34 +67,17 @@ const Login: React.FC = () => {
     checkLoggedIn();
   }, [navigation]);
 
-  // ✅ useCallback으로 고정 (딥링크 리스너 안정화)
+  // 딥링크로 받은 code를 백엔드 exchange API에 전달
   const processLogin = useCallback(
     async (code: string) => {
       try {
         console.log('🟡 [Login] authorizationCode 수신:', code);
 
-        // ✅ 백엔드로 code 전달 (카카오 토큰 교환은 백이 함)
-        const res = await api.post('/auth/kakao/login', {
-          authorizationCode: code,
-          redirectUri: REDIRECT_URI,
-        });
+        const data = await kakaoLoginToBackend(code);
 
-        console.log('🟢 [Login] 백엔드 응답:', res.data);
-
-        // ⚠️ 백 응답이 { data: { ... } } 형태면 여기 맞춰줘야 함
-        // 지금은 res.data가 바로 { accessToken, refreshToken, user } 라고 가정
-        const { accessToken, refreshToken, user } = res.data;
-
-        if (!accessToken || !refreshToken) {
-          console.error('❌ [Login] 토큰 누락:', res.data);
-          return;
-        }
-
-        await saveAccessToken(accessToken);
-        await saveRefreshToken(refreshToken);
-        if (user) await saveUser(user);
-
+        console.log('🟢 [Login] 백엔드 응답:', data);
         console.log('🟢 [Login] 저장 완료 → MainTabs로 이동');
+
         navigation.replace('MainTabs');
       } catch (err) {
         console.error('🔴 [Login] 로그인 실패:', err);
@@ -102,7 +86,7 @@ const Login: React.FC = () => {
     [navigation],
   );
 
-  // 🔹 딥링크에서 code=... 감지
+  // 딥링크에서 code=... 감지
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       const url = event.url;
@@ -154,7 +138,6 @@ const Login: React.FC = () => {
     };
   }, [processLogin]);
 
-  // 🔘 카카오 로그인 버튼 처리: 카카오 로그인 화면만 띄우면 됨
   const handleKakaoLogin = async () => {
     try {
       console.log('🟡 [Login] 카카오 로그인 플로우 시작');
@@ -208,7 +191,6 @@ const Login: React.FC = () => {
       <View style={styles.bottomArea}>
         {renderDots()}
 
-        {/* 카카오 로그인 */}
         <TouchableOpacity
           style={styles.kakaoButton}
           activeOpacity={0.8}
@@ -221,7 +203,6 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
-        {/* 이메일 로그인 */}
         <TouchableOpacity
           style={styles.emailButton}
           activeOpacity={0.8}
@@ -234,13 +215,8 @@ const Login: React.FC = () => {
           />
         </TouchableOpacity>
 
-        {/* 관리자 로그인 */}
-        <TouchableOpacity
-          onPress={() => navigation.replace('MainTabs')}
-        >
-          <Text style={styles.adminLoginText}>
-            병원 관리자 로그인
-          </Text>
+        <TouchableOpacity onPress={() => navigation.replace('MainTabs')}>
+          <Text style={styles.adminLoginText}>병원 관리자 로그인</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -281,15 +257,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   kakaoImage: { width: '100%', height: '100%' },
-
   emailButton: {
     width: '100%',
     height: 52,
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 10, // 관리자 로그인 텍스트와 간격
+    marginBottom: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -297,7 +271,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
   adminLoginText: {
     fontSize: 12,
     color: '#777777',

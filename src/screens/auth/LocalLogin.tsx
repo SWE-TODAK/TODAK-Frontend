@@ -7,22 +7,27 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LocalLogin'>;
 
-const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); // 이메일 오류 판단 기준
+const isValidEmail = (v: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-export default function LocalLogin({ navigation }: Props) {
-  const [email, setEmail] = useState('');
+export default function LocalLogin({ navigation, route }: Props) {
+  // ✅ (선택) SignUpSuccess에서 email을 넘겼으면 기본값으로 깔아주기
+  const initialEmail = route.params?.email ?? '';
+
+  const [email, setEmail] = useState(initialEmail);
   const [touched, setTouched] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // ✅ mode: 'login'이면 LocalPassword, 그 외는 SignUpPassword
+  const mode = route.params?.mode ?? 'signup';
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -46,16 +51,27 @@ export default function LocalLogin({ navigation }: Props) {
 
   const onContinue = () => {
     if (!canContinue) return;
+<<<<<<< HEAD
+
+    if (mode === 'login') {
+      // ✅ 회원가입 완료 후 로그인 진입 → 비밀번호 입력 화면
+      navigation.navigate('LocalPassword', { email: trimmed });
+    } else {
+      // ✅ 최초 회원가입 플로우 → 비밀번호 설정 화면
+      navigation.navigate('SignUpPassword', { email: trimmed });
+    }
+=======
     // ✅ 다음 스텝으로 연결 (일단 임시)
     // 나중에 "비밀번호 입력 화면" 만들면 그 라우트로 바꾸면 됨.
     navigation.navigate('LocalPassword', { email: trimmed });
     //navigation.navigate('SignUpPassword', { email: trimmed });
+>>>>>>> main
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-       <View style={styles.container}>
-       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.inner}>
             {/* 헤더 */}
             <View style={styles.header}>
@@ -108,7 +124,9 @@ export default function LocalLogin({ navigation }: Props) {
               <View style={styles.underline} />
 
               {showError && (
-                <Text style={styles.errorText}>올바른 이메일을 입력해주세요</Text>
+                <Text style={styles.errorText}>
+                  올바른 이메일을 입력해주세요
+                </Text>
               )}
             </View>
 
@@ -137,8 +155,8 @@ export default function LocalLogin({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
-       </TouchableWithoutFeedback>
-       </View>
+        </TouchableWithoutFeedback>
+      </View>
     </SafeAreaView>
   );
 }

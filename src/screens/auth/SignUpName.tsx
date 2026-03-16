@@ -11,7 +11,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpName'>;
 
@@ -21,6 +21,7 @@ const isValidName = (v: string) => v.trim().length >= 1;
 export default function SignUpName({ navigation, route }: Props) {
   // ✅ 이전 화면에서 넘어온 email
   const email = route.params?.email ?? '';
+  const password = route.params?.password ?? '';
 
   // ✅ name 입력값
   const [name, setName] = useState('');
@@ -48,7 +49,7 @@ export default function SignUpName({ navigation, route }: Props) {
 
   const onContinue = () => {
     if (!canContinue) return;
-    navigation.navigate('SignUpSex', { email, name: trimmed });
+    navigation.navigate('SignUpSex', { email, name: trimmed,password });
   };
 
   return (

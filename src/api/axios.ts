@@ -1,19 +1,23 @@
 import axios from 'axios';
 import { getAccessToken } from '../utils/authStorage';
 
-const instance = axios.create({
-  baseURL: 'https://todak-backend-705x.onrender.com',
+const BASE_URL = 'http://3.34.99.179:8080/api/v1';
+
+// ✅ 토큰 없이 쓰는 공개 API (회원가입/로그인/비번재설정 등)
+export const publicApi = axios.create({
+  baseURL: BASE_URL,
   timeout: 200000,
 });
 
-// 🔥 모든 요청에 자동으로 토큰 붙이기
+// ✅ 토큰 필요한 API (로그인 이후)
+const instance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 200000,
+});
+
 instance.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 

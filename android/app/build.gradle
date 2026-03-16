@@ -78,12 +78,14 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.todak_app"
-    defaultConfig {
+        defaultConfig {
         applicationId "com.todak_app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        manifestPlaceholders = [ usesCleartextTraffic: "false" ]
     }
     signingConfigs {
         debug {
@@ -96,13 +98,13 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            manifestPlaceholders = [ usesCleartextTraffic: "true" ]   // ✅ debug만 허용
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            manifestPlaceholders = [ usesCleartextTraffic: "false" ]  // ✅ release는 막기
         }
     }
 }

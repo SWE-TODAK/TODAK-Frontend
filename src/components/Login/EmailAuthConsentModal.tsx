@@ -23,7 +23,7 @@ export default function EmailAuthConsentModal({
         <Pressable
           style={styles.card}
           onPress={(e) => e.stopPropagation()}
-          activeOpacity={1}
+          //activeOpacity={1}
         >
           {/* ✅ 텍스트 영역 (상단 여백 등은 여기서 조절) */}
           <View style={styles.contentArea}>

@@ -32,14 +32,15 @@
           <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
 
-        <!-- ⭐ 카카오 로그인 딥링크 -->
+        <!-- ✅ 카카오 로그인 딥링크 -->
         <intent-filter android:label="kakaoLogin">
           <action android:name="android.intent.action.VIEW" />
-          <category android:name="android.intent.category.DEFAULT"/>
-          <category android:name="android.intent.category.BROWSABLE"/>
+          <category android:name="android.intent.category.DEFAULT" />
+          <category android:name="android.intent.category.BROWSABLE" />
           <data
               android:scheme="todak"
-              android:host="kakao-login" />
+              android:host="auth"
+              android:pathPrefix="/callback" />
         </intent-filter>
 
       </activity>
