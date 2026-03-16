@@ -4,17 +4,17 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // 실제 화면들
 import MainScreen from '../screens/MainScreen';
-import Health from '../screens/Health';
-import Mycare from '../screens/Mycare'
-import Calendar from '../screens/Calendar'
-import Setting from '../screens/Setting';
+import HealthStackNavigator from './HealthStackNavigator';
+import MycareStackNavigator from './MycareStackNavigator';
+import Calendar from '../screens/Calendar';
+import SettingStackNavigator from './SettingStackNavigator';
 // 나머지는 일단 더미 화면
 import { View, Text,Image } from 'react-native';
 
 export type MainTabParamList = {
   Home: undefined;
   Calendar: undefined;
-  Health: undefined;
+  MyHealth: undefined;
   MyCare: undefined;
   Setting: undefined;
 };
@@ -56,7 +56,7 @@ const MainTabNavigator = () => {
           : require('../assets/icons/calendar-inactive.png');
         size = { width: 30, height: 30 }; // 캘린더 작게
       }
-      else if (route.name === 'Health') {
+      else if (route.name === 'MyHealth') {
         icon = focused
           ? require('../assets/icons/health-active.png')
           : require('../assets/icons/health-inactive.png');
@@ -100,18 +100,18 @@ const MainTabNavigator = () => {
     options={{ tabBarLabel: '캘린더' }}
   />
   <Tab.Screen
-    name="Health"
-    component={Health}
+    name="MyHealth"
+    component={HealthStackNavigator}
     options={{ tabBarLabel: '건강관리' }}
   />
   <Tab.Screen
     name="MyCare"
-    component={Mycare}
+    component={MycareStackNavigator}
     options={{ tabBarLabel: '내 진료' }}
   />
   <Tab.Screen
     name="Setting"
-    component={Setting}
+    component={SettingStackNavigator}
     options={{ tabBarLabel: '더보기' }}
   />
 </Tab.Navigator>

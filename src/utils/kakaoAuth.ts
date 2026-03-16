@@ -5,10 +5,21 @@ import { saveAccessToken, saveRefreshToken, saveUser } from './authStorage';
 // ✅ 백엔드 base url
 const BACKEND_BASE_URL = 'http://3.34.99.179:8080';
 
+<<<<<<< HEAD
 // ✅ 백엔드의 카카오 로그인 시작 URL
 const KAKAO_START_PATH = '/oauth2/authorization/kakao';
 
 // ✅ exchange API
+=======
+// ✅ 카카오 콘솔에 등록된 Redirect URI (그리고 authorize 요청에 사용한 값과 동일해야 함)
+export const KAKAO_REDIRECT_URI =
+  'http://3.34.99.179:8080/oauth2/authorization/kakao';
+
+// ✅ 너희 백엔드 base url
+const BACKEND_BASE_URL = 'http://3.34.99.179:8080';
+
+// ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
+>>>>>>> main
 const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';
 const KAKAO_SIGNUP_API_PATH = '/auth/kakao/signup';
 

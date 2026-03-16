@@ -18,7 +18,9 @@ import ResetPasswordNewPw from '../screens/auth/ResetPasswordNewPw';
 import ResetPasswordSuccess from '../screens/auth/ResetPasswordSuccess';
 import Reservation from '../screens/Reservation';
 import MainTabNavigator from './MainTabNavigator';
-import Setting from '../screens/Setting';
+import Setting from '../screens/setting/Setting';
+import ProfileSetting from '../screens/setting/ProfileSetting';
+import PrivacyHistory from '../screens/setting/PrivacyHistory';
 
 // 🔥 추가됨: 나중에 실제 화면 만들기 전까지 임시 Placeholder 화면
 import { View, Text } from 'react-native';
@@ -30,6 +32,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Reservation: undefined;
   Setting: undefined;
+  ProfileSetting: undefined;
+  PrivacyHistory: undefined;
 
   LocalLogin: { email?: string; mode?: 'login' | 'signup' } | undefined;
   LocalPassword: { email: string };
