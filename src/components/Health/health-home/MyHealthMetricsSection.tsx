@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { CustomHealthMetricItem } from './CreateCustomMetricSection';
 
 export type MyHealthMetricCategory =
   | 'kidney'
@@ -55,17 +56,47 @@ const ITEMS: Item[] = [
 ];
 
 type Props = {
+  customItems?: CustomHealthMetricItem[];
+  isDeleteMode?: boolean;
+  onToggleDeleteMode?: () => void;
   onPressItem?: (key: MyHealthMetricCategory) => void;
+  onPressCustomItem?: (item: CustomHealthMetricItem) => void;
+  onDeleteCustomItem?: (id: string) => void;
 };
 
-const MyHealthMetricsSection: React.FC<Props> = ({ onPressItem }) => {
+const MyHealthMetricsSection: React.FC<Props> = ({
+  customItems = [],
+  isDeleteMode,
+  onToggleDeleteMode,
+  onPressItem,
+  onPressCustomItem,
+  onDeleteCustomItem,
+}) => {
+  const totalCount = ITEMS.length + customItems.length;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>나의 건강지표</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>나의 건강지표</Text>
+
+        <TouchableOpacity
+          style={styles.trashButton}
+          activeOpacity={0.7}
+          onPress={onToggleDeleteMode}
+        >
+          <Image
+            source={require('../../../assets/icons/trash.png')}
+            style={[
+              styles.trashIcon,
+              isDeleteMode && styles.trashIconActive,
+            ]}
+          />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         {ITEMS.map((item, idx) => {
-          const isLast = idx === ITEMS.length - 1;
+          const isLast = idx === totalCount - 1 && customItems.length === 0;
 
           return (
             <TouchableOpacity
@@ -74,20 +105,61 @@ const MyHealthMetricsSection: React.FC<Props> = ({ onPressItem }) => {
               activeOpacity={0.7}
               onPress={() => onPressItem?.(item.key)}
             >
-              {/* ✅ 왼쪽: 아이콘 + 텍스트 */}
               <View style={styles.left}>
-                <Image
-                  source={item.icon}style={[styles.leftIcon]}
-              />
+                <Image source={item.icon} style={styles.leftIcon} />
                 <Text style={styles.label}>{item.label}</Text>
               </View>
 
-              {/* ✅ 오른쪽 화살표 */}
               <Image
                 source={require('../../../assets/icons/arrow-right.png')}
                 style={styles.arrow}
               />
             </TouchableOpacity>
+          );
+        })}
+
+        {customItems.map((item, idx) => {
+          const isLast = idx === customItems.length - 1;
+
+          return (
+            <View key={item.id} style={[styles.row, !isLast && styles.rowBorder]}>
+              <TouchableOpacity
+                style={styles.customRowMain}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (isDeleteMode) return;
+                  onPressCustomItem?.(item);
+                }}
+              >
+                <View style={styles.left}>
+                  {/* TODO: 커스텀 지표 기본 아이콘은 나중에 여기에 추가 */}
+                  <View style={styles.customIconPlaceholder} />
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>{item.name}</Text>
+                    <Text style={styles.customUnit}>{item.unit}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {isDeleteMode ? (
+                <TouchableOpacity
+                  style={styles.deleteMarkButton}
+                  activeOpacity={0.7}
+                  onPress={() => onDeleteCustomItem?.(item.id)}
+                >
+                  <Image
+                    source={require('../../../assets/icons/subtraction.png')}
+                    style={styles.deleteMarkIcon}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <Image
+                  source={require('../../../assets/icons/arrow-right.png')}
+                  style={styles.arrow}
+                />
+              )}
+            </View>
           );
         })}
       </View>
@@ -106,7 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#111827',
-    marginBottom: 12,
+    marginLeft: 6,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -124,7 +196,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#2F62FF',
   },
-
   left: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -136,16 +207,65 @@ const styles = StyleSheet.create({
     height: 36,
     resizeMode: 'contain',
   },
+  customIconPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+  },
   label: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
   },
-
+  customUnit: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#6B7280',
+  },
   arrow: {
     width: 18,
     height: 18,
     resizeMode: 'contain',
     marginLeft: 12,
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  trashButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  trashIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    tintColor: '#9CA3AF',
+  },
+  trashIconActive: {
+    tintColor: '#2F62FF',
+  },
+
+  customRowMain: {
+    flex: 1,
+  },
+  deleteMarkButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  deleteMarkIcon: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
   },
 });
