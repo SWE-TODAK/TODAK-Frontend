@@ -17,27 +17,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-<<<<<<< HEAD
 import { getAccessToken } from '../utils/authStorage';
 import { startKakaoLogin, kakaoLoginToBackend } from '../utils/kakaoAuth';
-=======
-// ✅ 백엔드 호출 & 토큰 저장
-import api from '../api/axios';
-// ✅ 카카오 로그인 유틸 (start만 사용)
-import {
-  saveAccessToken,
-  saveRefreshToken,
-  saveUser,
-  getAccessToken, 
-} from '../utils/authStorage';
 
-// ✅ 카카오 로그인 유틸 (start만 사용)
-import { startKakaoLogin } from '../utils/kakaoAuth';
->>>>>>> main
 
 import LoginIntro1 from '../components/Login/LoginIntro1';
 import LoginIntro2 from '../components/Login/LoginIntro2';
-import LoginIntro3 from '../components/Login/LoginIntro3';
 
 type LoginNavProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 

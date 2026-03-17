@@ -51,7 +51,6 @@ export default function LocalLogin({ navigation, route }: Props) {
 
   const onContinue = () => {
     if (!canContinue) return;
-<<<<<<< HEAD
 
     if (mode === 'login') {
       // ✅ 회원가입 완료 후 로그인 진입 → 비밀번호 입력 화면
@@ -60,12 +59,6 @@ export default function LocalLogin({ navigation, route }: Props) {
       // ✅ 최초 회원가입 플로우 → 비밀번호 설정 화면
       navigation.navigate('SignUpPassword', { email: trimmed });
     }
-=======
-    // ✅ 다음 스텝으로 연결 (일단 임시)
-    // 나중에 "비밀번호 입력 화면" 만들면 그 라우트로 바꾸면 됨.
-    navigation.navigate('LocalPassword', { email: trimmed });
-    //navigation.navigate('SignUpPassword', { email: trimmed });
->>>>>>> main
   };
 
   return (
