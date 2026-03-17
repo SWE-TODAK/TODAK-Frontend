@@ -5,23 +5,12 @@ import { saveAccessToken, saveRefreshToken, saveUser } from './authStorage';
 // ✅ 백엔드 base url
 const BACKEND_BASE_URL = 'http://3.34.99.179:8080';
 
-<<<<<<< HEAD
 // ✅ 백엔드의 카카오 로그인 시작 URL
 const KAKAO_START_PATH = '/oauth2/authorization/kakao';
 
 // ✅ exchange API
-=======
-// ✅ 카카오 콘솔에 등록된 Redirect URI (그리고 authorize 요청에 사용한 값과 동일해야 함)
-export const KAKAO_REDIRECT_URI =
-  'http://3.34.99.179:8080/oauth2/authorization/kakao';
-
-// ✅ 너희 백엔드 base url
-const BACKEND_BASE_URL = 'http://3.34.99.179:8080';
-
-// ✅ 스웨거 명세에 있는 실제 경로로 바꿔줘야 함
->>>>>>> main
-const KAKAO_LOGIN_API_PATH = '/auth/kakao/login';
-const KAKAO_SIGNUP_API_PATH = '/auth/kakao/signup';
+const KAKAO_LOGIN_API_PATH = '/api/v1/auth/oauth/exchange';
+const KAKAO_SIGNUP_API_PATH = '/api/v1/auth/kakao/signup';
 
 // ✅ 앱이 받아야 하는 모바일 콜백 딥링크
 export const MOBILE_CALLBACK_URI = 'todak://auth/callback';
@@ -63,8 +52,9 @@ export type Consent = {
  * - 백엔드 시작 URL만 연다 ✅
  */
 export const startKakaoLogin = async () => {
-  const startUrl = `${BACKEND_BASE_URL}${KAKAO_START_PATH}`;
+  const startUrl = `${BACKEND_BASE_URL}${KAKAO_START_PATH}?platform=mobile`;
   console.log('🟡 [kakao] start url:', startUrl);
+  console.log('🟡 [kakao] expected callback:', MOBILE_CALLBACK_URI);  
   return Linking.openURL(startUrl);
 };
 
@@ -86,13 +76,26 @@ const extractAuthPayload = (data: any) => {
 export const kakaoLoginToBackend = async (
   authorizationCode: string,
 ): Promise<BackendAuthResponse> => {
-  const res = await fetch(`${BACKEND_BASE_URL}${KAKAO_LOGIN_API_PATH}`, {
+  const url = `${BACKEND_BASE_URL}${KAKAO_LOGIN_API_PATH}`;
+  const payload = { code: authorizationCode };
+
+  console.log('🟡 [kakaoLoginToBackend] request url:', url);
+  console.log('🟡 [kakaoLoginToBackend] request payload:', payload);
+  console.log(
+    '🟡 [kakaoLoginToBackend] request payload json:',
+    JSON.stringify(payload, null, 2),
+  );
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ authorizationCode }),
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json().catch(() => null);
+
+  console.log('🟡 [kakaoLoginToBackend] response status:', res.status);
+  console.log('🟡 [kakaoLoginToBackend] response data:', data);
 
   if (!res.ok) {
     console.log('❌ [kakaoLoginToBackend] fail:', res.status, data);
@@ -146,3 +149,4 @@ export const kakaoSignupToBackend = async (
 
   return data;
 };
+

@@ -87,16 +87,11 @@ export default function SignUpBirth({ navigation, route }: Props) {
   const payload = {
     email,
     password,
-    nickname: name || email,      // ✅ 테스트용: 일단 name으로 채우기
-    name: name || null,
+    nickname: name || email,     
+    // name: name || null,
     birthDate,
     gender,
     profileImageUrl: null,
-    consents: [
-      { consentType: 'TERMS', agreed: true, version: 'v1.0', source: 'SIGNUP' },
-      { consentType: 'PRIVACY', agreed: true, version: 'v1.0', source: 'SIGNUP' },
-      { consentType: 'MARKETING', agreed: false, version: 'v1.0', source: 'SIGNUP' },
-    ],
   };
   
   console.log('signup payload:', payload);
