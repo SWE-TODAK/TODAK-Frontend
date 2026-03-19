@@ -86,9 +86,12 @@ const MyHealth: React.FC = () => {
             });
           }}
           onPressCustomItem={(item) => {
-            console.log('custom metric pressed:', item);
-            // TODO: 커스텀 지표 상세 화면 연결 예정
-          }}
+            stackNav.navigate('HealthMetric', {
+              title: item.name,
+              isCustom: true,
+              customMetric: item,
+            });
+}}
           onDeleteCustomItem={handleDeleteCustomMetric}
         />
 
