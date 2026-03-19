@@ -20,7 +20,7 @@ import { saveAccessToken, saveRefreshToken, saveUser } from '../../utils/authSto
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LocalPassword'>;
 
-const isValidPassword = (v: string) => v.trim().length >= 6;
+const isValidPassword = (v: string) => v.trim().length >= 8;
 
 export default function LocalPassword({ navigation, route }: Props) {
   const [password, setPassword] = useState('');
@@ -119,7 +119,7 @@ export default function LocalPassword({ navigation, route }: Props) {
                 <TextInput
                   value={password}
                   onChangeText={onChangePassword}
-                  placeholder="6자리 이상 비밀번호를 입력해 주세요"
+                  placeholder="8자리 이상 비밀번호를 입력해 주세요"
                   placeholderTextColor="rgba(60, 60, 67, 0.3)"
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"

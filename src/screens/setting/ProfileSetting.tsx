@@ -61,25 +61,38 @@ export default function ProfileSetting({ navigation }: Props) {
     setTimeout(() => setToastVisible(false), 1400);
   };
 
-  // ✅ 1. 프로필 설정 화면 조회 + 연동 상태 확인
+  // ✅ 1. 프로필 설정 화면 조회 + 연동 상태 확인 (에러 독립 처리)
   useEffect(() => {
     const fetchData = async () => {
+      // 1-1. 프로필 정보 조회
       try {
         const profileRes = await instance.get('/users/me/profile');
         const data = profileRes.data?.data || profileRes.data;
 
         setNicknameDraft(data.name || data.nickname || '');
         setEmailDraft(data.email || '');
-        setBirthDraft(data.birth || '');
-        setSexDraft(data.sex || 'F');
-        setProfileImageUri(data.profileImageUrl || data.profileImage || null);
 
-        // 카카오 연동 상태 확인 API
-        const providerRes = await instance.get('/auth/providers');
-        const providers = providerRes.data?.data || providerRes.data || [];
-        setKakaoEasyLogin(providers.includes('KAKAO'));
+        // ✅ 백엔드 키값(birthDate, gender) 정확히 매핑
+        setBirthDraft(data.birthDate || data.birth || '');
+
+        const genderVal = data.gender || data.sex || 'F';
+        setSexDraft(genderVal === 'MALE' ? 'M' : genderVal === 'FEMALE' ? 'F' : genderVal);
+
+        setProfileImageUri(data.profileImageUrl || data.profileImage || null);
       } catch (error) {
-        showToast('정보를 불러오지 못했습니다.');
+        console.log('프로필 조회 API 에러:', error);
+        showToast('프로필 정보를 불러오지 못했습니다.');
+      }
+
+      // 1-2. 카카오 연동 상태 확인 API
+      try {
+        const providerRes = await instance.get('/auth/providers');
+        // ✅ API 명세서에 맞게 data 안의 "providers" 배열을 추출
+        const providersList = providerRes.data?.providers || [];
+
+        setKakaoEasyLogin(providersList.includes('KAKAO'));
+      } catch (error) {
+        console.log('카카오 연동 확인 API 에러:', error);
       } finally {
         setIsLoading(false);
       }
