@@ -15,7 +15,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpPassword'>;
 
-const isValidPassword = (v: string) => v.trim().length >= 6;
+const isValidPassword = (v: string) => v.trim().length >= 8;
 
 export default function SignUpPassword({ navigation, route }: Props) {
   const email = route.params?.email ?? '';
@@ -119,7 +119,7 @@ export default function SignUpPassword({ navigation, route }: Props) {
                 <TextInput
                   value={pw1}
                   onChangeText={setPw1}
-                  placeholder="6자리 이상 비밀번호를 입력해 주세요"
+                  placeholder="8자리 이상 비밀번호를 입력해 주세요"
                   placeholderTextColor="rgba(60, 60, 67, 0.3)"
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
@@ -146,7 +146,7 @@ export default function SignUpPassword({ navigation, route }: Props) {
 
               {/* ✅ input1 아래 메시지 */}
               {showPw1Error && (
-                <Text style={styles.errorText}>6자리 이상 입력해주세요</Text>
+                <Text style={styles.errorText}>8자리 이상 입력해주세요</Text>
               )}
               {showPw1Success && (
                 <Text style={styles.successText}>올바른 비밀번호입니다</Text>
