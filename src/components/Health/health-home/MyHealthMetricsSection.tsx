@@ -143,22 +143,30 @@ const MyHealthMetricsSection: React.FC<Props> = ({
               </TouchableOpacity>
 
               {isDeleteMode ? (
-                <TouchableOpacity
-                  style={styles.deleteMarkButton}
-                  activeOpacity={0.7}
-                  onPress={() => onDeleteCustomItem?.(item.id)}
-                >
-                  <Image
-                    source={require('../../../assets/icons/subtraction.png')}
-                    style={styles.deleteMarkIcon}
-                  />
-                </TouchableOpacity>
-              ) : (
+              <TouchableOpacity
+                style={styles.deleteMarkButton}
+                activeOpacity={0.7}
+                onPress={() => onDeleteCustomItem?.(item.id)}
+              >
+                <Image
+                  source={require('../../../assets/icons/subtraction.png')}
+                  style={styles.deleteMarkIcon}
+                />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.deleteMarkButton}
+                activeOpacity={0.7}
+                onPress={() => {
+                  onPressCustomItem?.(item);
+                }}
+              >
                 <Image
                   source={require('../../../assets/icons/arrow-right.png')}
                   style={styles.arrow}
                 />
-              )}
+              </TouchableOpacity>
+            )}
             </View>
           );
         })}
