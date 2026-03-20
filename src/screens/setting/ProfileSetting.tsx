@@ -61,38 +61,27 @@ export default function ProfileSetting({ navigation }: Props) {
     setTimeout(() => setToastVisible(false), 1400);
   };
 
-  // ✅ 1. 프로필 설정 화면 조회 + 연동 상태 확인 (에러 독립 처리)
+  // ✅ 1. 프로필 설정 화면 상세 조회 (GET /users/me/profile)
   useEffect(() => {
     const fetchData = async () => {
-      // 1-1. 프로필 정보 조회
       try {
         const profileRes = await instance.get('/users/me/profile');
         const data = profileRes.data?.data || profileRes.data;
 
-        setNicknameDraft(data.name || data.nickname || '');
+        // 명세서 키값 매핑 (nickname, birthDate, gender, kakaoLinked)
+        setNicknameDraft(data.nickname || '');
         setEmailDraft(data.email || '');
+        setBirthDraft(data.birthDate || '');
 
-        // ✅ 백엔드 키값(birthDate, gender) 정확히 매핑
-        setBirthDraft(data.birthDate || data.birth || '');
+        const genderVal = data.gender || 'FEMALE';
+        setSexDraft(genderVal === 'MALE' ? 'M' : 'F');
 
-        const genderVal = data.gender || data.sex || 'F';
-        setSexDraft(genderVal === 'MALE' ? 'M' : genderVal === 'FEMALE' ? 'F' : genderVal);
+        setProfileImageUri(data.profileImageUrl || null);
+        setKakaoEasyLogin(data.kakaoLinked || false);
 
-        setProfileImageUri(data.profileImageUrl || data.profileImage || null);
-      } catch (error) {
-        console.log('프로필 조회 API 에러:', error);
+      } catch (error: any) {
+        console.log('프로필 조회 API 에러:', error.response?.data || error.message);
         showToast('프로필 정보를 불러오지 못했습니다.');
-      }
-
-      // 1-2. 카카오 연동 상태 확인 API
-      try {
-        const providerRes = await instance.get('/auth/providers');
-        // ✅ API 명세서에 맞게 data 안의 "providers" 배열을 추출
-        const providersList = providerRes.data?.providers || [];
-
-        setKakaoEasyLogin(providersList.includes('KAKAO'));
-      } catch (error) {
-        console.log('카카오 연동 확인 API 에러:', error);
       } finally {
         setIsLoading(false);
       }
@@ -110,18 +99,20 @@ export default function ProfileSetting({ navigation }: Props) {
 
   const endEdit = () => setEditing(null);
 
-  // ✅ 2. 이름 수정
+  // ✅ 2. 닉네임 수정 (PATCH /users/me/profile/name)
   const commitNickname = async () => {
     endEdit();
     try {
-      await instance.patch('/users/me/profile/name', { name: nicknameDraft });
+      await instance.patch('/users/me/profile/name', { nickname: nicknameDraft });
       showToast('저장됐어요');
-    } catch (e) {
-      showToast('이름 저장에 실패했어요');
+    } catch (e: any) {
+      // 409 중복 처리 및 400 에러 메시지 표시
+      const errMsg = e.response?.data?.message || '닉네임 저장에 실패했어요';
+      showToast(errMsg);
     }
   };
 
-  // ✅ 3. 이메일 수정
+  // ✅ 3. 이메일 수정 (PATCH /users/me/profile/email)
   const commitEmail = async () => {
     const v = emailDraft.trim();
     if (!isValidEmail(v)) {
@@ -134,8 +125,10 @@ export default function ProfileSetting({ navigation }: Props) {
     try {
       await instance.patch('/users/me/profile/email', { email: v });
       showToast('저장됐어요');
-    } catch (e) {
-      showToast('이메일 저장에 실패했어요');
+    } catch (e: any) {
+      // 409 중복 처리 및 400 에러 메시지 표시
+      const errMsg = e.response?.data?.message || '이메일 저장에 실패했어요';
+      showToast(errMsg);
     }
   };
 
@@ -155,7 +148,7 @@ export default function ProfileSetting({ navigation }: Props) {
     setSexModalVisible(true);
   };
 
-  // ✅ 4. 성별 수정
+  // ✅ 4. 성별 수정 (PATCH /users/me/profile/sex)
   const commitSex = async (next: 'M' | 'F') => {
     if (next === sexDraft) {
       setSexModalVisible(false);
@@ -163,22 +156,25 @@ export default function ProfileSetting({ navigation }: Props) {
     }
     setSexModalVisible(false);
     try {
-      await instance.patch('/users/me/profile/sex', { sex: next });
+      const genderStr = next === 'M' ? 'MALE' : 'FEMALE';
+      await instance.patch('/users/me/profile/sex', { gender: genderStr });
       setSexDraft(next);
       showToast('저장됐어요');
-    } catch (e) {
-      showToast('성별 저장에 실패했어요');
+    } catch (e: any) {
+      const errMsg = e.response?.data?.message || '성별 저장에 실패했어요';
+      showToast(errMsg);
     }
   };
 
-  // ✅ 5. 생년월일 수정
+  // ✅ 5. 생년월일 수정 (PATCH /users/me/profile/birth)
   const commitBirth = async (next: string) => {
     try {
-      await instance.patch('/users/me/profile/birth', { birth: next });
+      await instance.patch('/users/me/profile/birth', { birthDate: next });
       setBirthDraft(next);
       showToast('저장됐어요');
-    } catch (e) {
-      showToast('생년월일 저장에 실패했어요');
+    } catch (e: any) {
+      const errMsg = e.response?.data?.message || '생년월일 저장에 실패했어요';
+      showToast(errMsg);
     }
   };
 
@@ -188,31 +184,25 @@ export default function ProfileSetting({ navigation }: Props) {
     setProfileModalVisible(true);
   };
 
-  // ✅ 6. 프로필 이미지 변경 (업로드/삭제)
+  // ✅ 6. 프로필 이미지 변경 (PATCH /users/me/profile/image)
   const handleImageUpload = async (uri: string | null) => {
     try {
+      // 삭제 시 "빈 문자열 불가"이므로 null 전달로 협의 필요 (우선 null 처리)
       if (!uri) {
-        // 이미지 삭제 시 빈 값을 보냅니다. (명세서에 DELETE가 없으므로 PATCH 사용)
-        await instance.patch('/users/me/profile/image', { profileImage: null });
+        await instance.patch('/users/me/profile/image', { profileImageUrl: null });
         setProfileImageUri(null);
         showToast('기본 이미지로 변경됐어요');
       } else {
-        // Multipart/form-data 전송
-        const formData = new FormData();
-        formData.append('file', {
-          uri,
-          type: 'image/jpeg',
-          name: 'profile.jpg',
-        } as any);
-
-        await instance.patch('/users/me/profile/image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        // 명세서 상 Request Body에 JSON 객체 { "profileImageUrl": "..." } 전송
+        // (주의: 모바일 로컬 uri를 직접 보내면 백엔드에서 이미지 조회가 불가능합니다.
+        // 추후 S3 업로드 로직이 추가되거나 명세서가 multipart/form-data로 변경될 수 있습니다.)
+        await instance.patch('/users/me/profile/image', { profileImageUrl: uri });
         setProfileImageUri(uri);
         showToast('저장됐어요');
       }
-    } catch (e) {
-      showToast('이미지 저장에 실패했어요');
+    } catch (e: any) {
+      const errMsg = e.response?.data?.message || '이미지 저장에 실패했어요';
+      showToast(errMsg);
     }
   };
 
@@ -234,7 +224,6 @@ export default function ProfileSetting({ navigation }: Props) {
       if (next) {
         await instance.post('/auth/kakao/link');
       } else {
-        // 명세에 해제가 명시되지 않았으나 일반적인 패턴으로 작성. (오류시 주소 확인 필요)
         await instance.post('/auth/kakao/unlink');
       }
       setKakaoEasyLogin(next);
@@ -324,7 +313,7 @@ export default function ProfileSetting({ navigation }: Props) {
 
         <View style={styles.infoList}>
           <InfoRow
-            label="이름"
+            label="닉네임"
             value={nicknameDraft}
             editable
             isEditing={editing === 'nickname'}

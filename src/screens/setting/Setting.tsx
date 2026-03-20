@@ -47,14 +47,15 @@ const Setting: React.FC = () => {
 
   const fetchUserInfo = async () => {
     try {
-      // ✅ 마이페이지 기본 정보 조회
+      // ✅ 1. 마이페이지 기본 정보 조회 (GET /users/me)
       const response = await instance.get('/users/me');
       const data = response.data?.data || response.data;
 
+      // ✅ 명세서 키값 매핑 (nickname, profileImageUrl)
       setUser({
-        name: data.name || data.nickname || '이름 없음',
+        name: data.nickname || '이름 없음',
         email: data.email || '',
-        profileImage: data.profileImageUrl || data.profileImage || '',
+        profileImage: data.profileImageUrl || '',
       });
     } catch (error) {
       console.log('유저 정보 조회 실패:', error);
@@ -77,7 +78,6 @@ const Setting: React.FC = () => {
     try {
       // TODO: 피드백 API 명세가 확정되면 URL 수정
       await instance.post('/feedbacks/satisfaction', { isSatisfied: v });
-
       setIsSatisfied(v);
       setSatisfactionVisible(false);
       setInputVisible(true);
@@ -98,7 +98,7 @@ const Setting: React.FC = () => {
     }
 
     try {
-      // TODO: 피드백 제출 API 명세가 확정되면 URL 수정
+      // TODO: 피드백 API 명세가 확정되면 URL 수정
       await instance.post('/feedbacks', {
         isSatisfied: isSatisfied,
         content: text,
