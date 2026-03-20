@@ -1,12 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useHealthMetricStore } from '../../store/useHealthMetricStore';
 
 export type RecordFilterType = number | 'all';
-
-type Props = {
-  value: RecordFilterType;
-  onChange: (value: RecordFilterType) => void;
-};
 
 const OPTIONS: { label: string; value: RecordFilterType }[] = [
   { label: '7개', value: 7 },
@@ -15,7 +11,11 @@ const OPTIONS: { label: string; value: RecordFilterType }[] = [
   { label: '전체', value: 'all' },
 ];
 
-export default function RecentRecordFilter({ value, onChange }: Props) {
+export default function RecentRecordFilter() {
+  const value = useHealthMetricStore((state) => state.recordFilter);
+  const setRecordFilter = useHealthMetricStore((state) => state.setRecordFilter);
+  const setTooltip = useHealthMetricStore((state) => state.setTooltip);
+
   return (
     <View style={styles.wrap}>
       {OPTIONS.map((option, idx) => {
@@ -25,7 +25,10 @@ export default function RecentRecordFilter({ value, onChange }: Props) {
           <React.Fragment key={String(option.value)}>
             <Pressable
               style={[styles.item, selected && styles.selectedItem]}
-              onPress={() => onChange(option.value)}
+              onPress={() => {
+                setRecordFilter(option.value);
+                setTooltip(null);
+              }}
             >
               <Text style={[styles.itemText, selected && styles.selectedText]}>
                 {option.label}

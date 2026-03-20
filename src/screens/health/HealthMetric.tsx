@@ -54,6 +54,8 @@ import ResultCard from '../../components/Health/ResultCard';
 
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
+import { useHealthMetricStore } from '../../store/useHealthMetricStore';
+
 type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
 type RouteProps = RouteProp<HealthStackParamList, 'HealthMetric'>;
 
@@ -152,11 +154,14 @@ const HealthMetric: React.FC = () => {
   // ------------------------------
   // 최근 기록 필터 상태
   // ------------------------------
-  const [recordFilter, setRecordFilter] = useState<number | 'all'>(7);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [customFilterValue, setCustomFilterValue] = useState(
-    String(recordFilter === 'all' ? 7 : recordFilter)
-  );
+  const recordFilter = useHealthMetricStore((state) => state.recordFilter);
+  const setRecordFilter = useHealthMetricStore((state) => state.setRecordFilter);
+
+  const filterModalOpen = useHealthMetricStore((state) => state.filterModalOpen);
+  const setFilterModalOpen = useHealthMetricStore((state) => state.setFilterModalOpen);
+
+  const customFilterValue = useHealthMetricStore((state) => state.customFilterValue);
+  const setCustomFilterValue = useHealthMetricStore((state) => state.setCustomFilterValue);
 
   // ------------------------------
   // mock 데이터 안전 처리
@@ -388,9 +393,28 @@ const HealthMetric: React.FC = () => {
   // ------------------------------
   // 선택된 series 상태
   // ------------------------------
-  const [selectedSeriesKey, setSelectedSeriesKey] = useState<string>(
-    effectiveConfig.defaultSelectedSeriesKey ?? effectiveConfig.series[0]?.key ?? ''
-  );
+  const selectedSeriesKey = useHealthMetricStore((state) => state.selectedSeriesKey);
+  const setSelectedSeriesKey = useHealthMetricStore((state) => state.setSelectedSeriesKey);
+
+  // ------------------------------
+  // 툴팁 상태
+  // ------------------------------
+  const tooltip = useHealthMetricStore((state) => state.tooltip);
+  const setTooltip = useHealthMetricStore((state) => state.setTooltip);
+
+  /**
+   * 현재 툴팁이 가리키는 series 설정
+   */
+  const tooltipSeries = useMemo(() => {
+    if (!tooltip) return null;
+
+    return (
+      effectiveConfig.series.find(
+        (series: MetricSeriesConfig) => series.key === tooltip.key
+      ) ?? null
+    );
+  }, [effectiveConfig, tooltip]);
+
 
   /**
    * config가 바뀌면 선택 series와 tooltip 초기화
@@ -400,8 +424,7 @@ const HealthMetric: React.FC = () => {
       effectiveConfig.defaultSelectedSeriesKey ?? effectiveConfig.series[0]?.key ?? ''
     );
     setTooltip(null);
-  }, [effectiveConfig]);
-
+  }, [effectiveConfig, setSelectedSeriesKey, setTooltip]);
   /**
    * 현재 선택된 series
    */
@@ -420,30 +443,7 @@ const HealthMetric: React.FC = () => {
     return buildChartZones(selectedSeries?.zones);
   }, [selectedSeries]);
 
-  // ------------------------------
-  // 툴팁 상태
-  // ------------------------------
-  const [tooltip, setTooltip] = useState<{
-    key: string;
-    index: number;
-    x: number;
-    y: number;
-    xLabel: string;
-    value: number;
-  } | null>(null);
-
-  /**
-   * 현재 툴팁이 가리키는 series 설정
-   */
-  const tooltipSeries = useMemo(() => {
-    if (!tooltip) return null;
-
-    return (
-      effectiveConfig.series.find(
-        (series: MetricSeriesConfig) => series.key === tooltip.key
-      ) ?? null
-    );
-  }, [effectiveConfig, tooltip]);
+  
 
   // ------------------------------
   // 기본 지표용 임시 진단 결과
@@ -479,6 +479,9 @@ const HealthMetric: React.FC = () => {
     }
   }, [builtInCategory]);
 
+  const openFilterModal = useHealthMetricStore((state) => state.openFilterModal);
+  const syncCustomFilterValue = useHealthMetricStore((state) => state.syncCustomFilterValue);
+
   return (
     <View style={styles.root}>
       {/* 헤더 */}
@@ -500,13 +503,7 @@ const HealthMetric: React.FC = () => {
 
         <View style={styles.filterRow}>
           <View style={styles.filterBox}>
-            <RecentRecordFilter
-              value={recordFilter}
-              onChange={(value) => {
-                setRecordFilter(value);
-                setTooltip(null);
-              }}
-            />
+            <RecentRecordFilter />
           </View>
 
           <TouchableOpacity
@@ -515,8 +512,8 @@ const HealthMetric: React.FC = () => {
               filterModalOpen && styles.filterIconButtonActive,
             ]}
             onPress={() => {
-              setCustomFilterValue(String(recordFilter === 'all' ? 7 : recordFilter));
-              setFilterModalOpen(true);
+              syncCustomFilterValue();
+              openFilterModal();
             }}
           >
             <Image
@@ -529,21 +526,7 @@ const HealthMetric: React.FC = () => {
             />
           </TouchableOpacity>
 
-          <RecordFilterModal
-            visible={filterModalOpen}
-            value={customFilterValue}
-            onChangeValue={setCustomFilterValue}
-            onClose={() => setFilterModalOpen(false)}
-            onConfirm={() => {
-              const n = Number(customFilterValue);
-
-              if (!Number.isNaN(n) && n > 0) {
-                setRecordFilter(n as 7 | 14 | 21 | 'all');
-              }
-
-              setFilterModalOpen(false);
-            }}
-          />
+          <RecordFilterModal/>
         </View>
       </View>
 
@@ -600,12 +583,11 @@ const HealthMetric: React.FC = () => {
                     setSelectedSeriesKey(key);
                   }}
                   onSelectPoint={(point) => {
-                    setTooltip(prev => {
-                      if (prev && prev.index === point.index && prev.key === point.key) {
-                        return null;
-                      }
-                      return point;
-                    });
+                    if (tooltip && tooltip.index === point.index && tooltip.key === point.key) {
+                      setTooltip(null);
+                    } else {
+                      setTooltip(point);
+                    }
                   }}
                   series={chartSeries}
                 />
