@@ -1,5 +1,6 @@
 // src/screens/HealthMetric.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import api from '../../api/axios';
 import {
   View,
   Text,
@@ -295,7 +296,7 @@ const HealthMetric: React.FC = () => {
             : safeLiverRecords.slice(-recordFilter);
 
         return buildLiverChartSeries(records, effectiveConfig.series);
-      }
+          }
 
       case 'kidney': {
         const records =
@@ -376,6 +377,44 @@ const HealthMetric: React.FC = () => {
   // 입력 모달 상태
   // ------------------------------
   const [inputOpen, setInputOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const handleSubmitMetricValue = async () => {
+    try {
+      const metricId = isCustom ? customMetric?.id : undefined;
+
+      if (!metricId) {
+        console.log('❌ metricId가 없습니다. 현재 화면에 metricId 전달 필요');
+        return;
+      }
+
+      const rawValue = Object.values(inputValues)[0];
+
+      if (!rawValue || !String(rawValue).trim()) {
+        console.log('❌ 입력값이 비어 있습니다.');
+        return;
+      }
+
+      const requestBody = {
+        metricId,
+        recordedAt: selectedDate.toISOString(),
+        value: Number(rawValue),
+      };
+
+      console.log('✅ 건강 수치 저장 요청:', requestBody);
+
+      const response = await api.post('/health/metrics/batch', requestBody);
+
+      console.log('✅ 건강 수치 저장 응답:', response.data);
+
+      setInputOpen(false);
+    } catch (error: any) {
+      console.error(
+        '❌ 건강 수치 저장 실패:',
+        error?.response?.data || error
+      );
+    }
+  };
 
   /**
    * 입력값은 지표마다 field 개수가 다르므로
@@ -389,6 +428,8 @@ const HealthMetric: React.FC = () => {
       [key]: value,
     }));
   };
+
+
 
   // ------------------------------
   // 선택된 series 상태
@@ -663,11 +704,10 @@ const HealthMetric: React.FC = () => {
         title={title}
         inputFields={effectiveConfig.inputFields}
         values={inputValues}
+        selectedDate={selectedDate}
+        onChangeDate={setSelectedDate}
         onChangeValue={handleChangeInputValue}
-        onSubmit={() => {
-          console.log('submit', inputValues);
-          setInputOpen(false);
-        }}
+        onSubmit={handleSubmitMetricValue}
       />
     </View>
   );
