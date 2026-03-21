@@ -106,7 +106,6 @@ export default function ProfileSetting({ navigation }: Props) {
       await instance.patch('/users/me/profile/name', { nickname: nicknameDraft });
       showToast('저장됐어요');
     } catch (e: any) {
-      // 409 중복 처리 및 400 에러 메시지 표시
       const errMsg = e.response?.data?.message || '닉네임 저장에 실패했어요';
       showToast(errMsg);
     }
@@ -126,7 +125,6 @@ export default function ProfileSetting({ navigation }: Props) {
       await instance.patch('/users/me/profile/email', { email: v });
       showToast('저장됐어요');
     } catch (e: any) {
-      // 409 중복 처리 및 400 에러 메시지 표시
       const errMsg = e.response?.data?.message || '이메일 저장에 실패했어요';
       showToast(errMsg);
     }
@@ -184,18 +182,16 @@ export default function ProfileSetting({ navigation }: Props) {
     setProfileModalVisible(true);
   };
 
-  // ✅ 6. 프로필 이미지 변경 (PATCH /users/me/profile/image)
+  // ✅ 6. 프로필 이미지 변경 (추가/수정: PATCH, 삭제: DELETE)
   const handleImageUpload = async (uri: string | null) => {
     try {
-      // 삭제 시 "빈 문자열 불가"이므로 null 전달로 협의 필요 (우선 null 처리)
       if (!uri) {
-        await instance.patch('/users/me/profile/image', { profileImageUrl: null });
+        // ✅ 이미지 삭제 API 연동 (DELETE 요청은 Body가 없음)
+        await instance.delete('/users/me/profile/image');
         setProfileImageUri(null);
         showToast('기본 이미지로 변경됐어요');
       } else {
-        // 명세서 상 Request Body에 JSON 객체 { "profileImageUrl": "..." } 전송
-        // (주의: 모바일 로컬 uri를 직접 보내면 백엔드에서 이미지 조회가 불가능합니다.
-        // 추후 S3 업로드 로직이 추가되거나 명세서가 multipart/form-data로 변경될 수 있습니다.)
+        // ✅ 이미지 등록/수정 API 연동 (PATCH)
         await instance.patch('/users/me/profile/image', { profileImageUrl: uri });
         setProfileImageUri(uri);
         showToast('저장됐어요');
