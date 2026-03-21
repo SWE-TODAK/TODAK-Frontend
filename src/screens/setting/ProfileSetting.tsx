@@ -25,8 +25,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 import instance from '../../api/axios';
-import { clearAllTokens } from '../../utils/authStorage';
-
+import { clearAllTokens, getRefreshToken } from '../../utils/authStorage';
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileSetting'>;
 
@@ -247,18 +246,35 @@ export default function ProfileSetting({ navigation }: Props) {
     }
   };
 
-  // ✅ 9. 회원탈퇴 API
+// ✅ 9. 회원탈퇴 API
   const handleWithdraw = async () => {
     setWithdrawVisible(false);
     try {
-      await instance.delete('/auth/users/delete');
+      // 1. 스토리지에서 리프레시 토큰 꺼내기
+      const refreshToken = await getRefreshToken();
+
+      // 2. Axios DELETE 요청에 Body 데이터(data) 담아서 보내기
+      await instance.delete('/auth/users/delete', {
+        data: {
+          refreshToken: refreshToken,
+          reason: "사용자 앱 내 탈퇴 요청" // 명세서에 선택사항(null 가능)으로 되어있어 임의로 추가
+        }
+      });
+
+      // 3. 탈퇴 성공 시 토큰 싹 지우고 로그인 화면으로 이동
       await clearAllTokens();
       showToast('탈퇴가 완료되었습니다.');
+
       setTimeout(() => {
         navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
       }, 1000);
-    } catch (e) {
-      showToast('탈퇴 처리 중 오류가 발생했어요');
+
+    } catch (e: any) {
+      console.log('회원탈퇴 API 에러:', e.response?.data || e.message);
+
+      // 명세서에 정의된 백엔드 에러 메시지(401, 404, 500 등)를 그대로 띄워줌
+      const errMsg = e.response?.data?.message || '탈퇴 처리 중 오류가 발생했어요';
+      showToast(errMsg);
     }
   };
 
