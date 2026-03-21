@@ -233,14 +233,26 @@ export default function ProfileSetting({ navigation }: Props) {
     setPendingKakaoEasyLogin(null);
   };
 
-  // ✅ 8. 로그아웃 API
+// ✅ 8. 로그아웃 API
   const handleLogout = async () => {
     setLogoutVisible(false);
     try {
-      await instance.post('/auth/logout');
-    } catch (e) {
-      console.log('로그아웃 API 실패:', e);
+      // 1. 스토리지에서 리프레시 토큰 꺼내기
+      const refreshToken = await getRefreshToken();
+
+      // 2. Axios POST 요청 바디에 토큰 담아서 보내기
+      await instance.post('/auth/logout', {
+        refreshToken: refreshToken
+      });
+
+    } catch (e: any) {
+      console.log('로그아웃 API 실패:', e.response?.data || e.message);
+
+      // 로그아웃 실패 에러 메시지도 토스트로 띄워주기 
+      const errMsg = e.response?.data?.message || '로그아웃 처리 중 오류가 발생했어요';
+      showToast(errMsg);
     } finally {
+      // 3. 백엔드 통신 성공 여부와 상관없이, 프론트엔드 기기 내 토큰은 싹 지우고 로그인 화면으로 이동
       await clearAllTokens();
       navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
     }
