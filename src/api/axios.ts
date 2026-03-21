@@ -8,6 +8,7 @@ import {
   clearAllTokens,
 } from '../utils/authStorage';
 
+
 const BASE_URL = 'http://3.34.99.179:8080/api/v1';
 
 // ✅ 토큰 없이 쓰는 공개 API (회원가입/로그인/비번재설정/토큰재발급 등)
@@ -25,7 +26,17 @@ const instance = axios.create({
 // 1. 요청 인터셉터: API 쏠 때마다 Access Token 넣기
 instance.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  console.log('🟡 [API 요청] url:', config.url);
+  console.log('🟡 [API 요청] token:', token);
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+    console.log('🟢 Authorization 붙음:', config.headers.Authorization);
+  } else {
+    console.log('🔴 토큰 없음');
+  }
+
   return config;
 });
 
