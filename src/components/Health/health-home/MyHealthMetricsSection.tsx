@@ -62,6 +62,7 @@ type Props = {
   onPressItem?: (key: MyHealthMetricCategory) => void;
   onPressCustomItem?: (item: CustomHealthMetricItem) => void;
   onDeleteCustomItem?: (id: string) => void;
+  isDeleteEnabled?: boolean;
 };
 
 const MyHealthMetricsSection: React.FC<Props> = ({
@@ -71,6 +72,7 @@ const MyHealthMetricsSection: React.FC<Props> = ({
   onPressItem,
   onPressCustomItem,
   onDeleteCustomItem,
+  isDeleteEnabled = true,
 }) => {
   const totalCount = ITEMS.length + customItems.length;
 
@@ -79,16 +81,18 @@ const MyHealthMetricsSection: React.FC<Props> = ({
       <View style={styles.titleRow}>
         <Text style={styles.title}>나의 건강지표</Text>
 
-        <TouchableOpacity
+       <TouchableOpacity
           style={styles.trashButton}
           activeOpacity={0.7}
           onPress={onToggleDeleteMode}
+          disabled={!isDeleteEnabled}
         >
           <Image
             source={require('../../../assets/icons/trash.png')}
             style={[
               styles.trashIcon,
-              isDeleteMode && styles.trashIconActive,
+              isDeleteMode && isDeleteEnabled && styles.trashIconActive,
+              !isDeleteEnabled && styles.trashIconDisabled,
             ]}
           />
         </TouchableOpacity>
@@ -275,5 +279,8 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     resizeMode: 'contain',
+  },
+  trashIconDisabled: {
+    tintColor: '#D1D5DB',
   },
 });
