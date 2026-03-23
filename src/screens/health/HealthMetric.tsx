@@ -70,7 +70,7 @@ const DEFAULT_METRIC_ID_MAP: Record<string, string> = {
 };
 
 type MetricHistoryItem = {
-  metricId: string;
+  metricId: string; // 현재 백 응답상 사실상 metricValueId 역할
   date: string;
   value?: number;
   systolic?: number;
@@ -687,7 +687,7 @@ const HealthMetric: React.FC = () => {
                       }
 
                       return {
-                        metricValueId: (selected as any).metricValueId,
+                        metricValueId: selected.metricId,
                         date: selected.date,
                         value: selected.value,
                         systolic: selected.systolic,
