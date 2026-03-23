@@ -65,6 +65,8 @@ export default function LocalPassword({ navigation, route }: Props) {
       password: trimmed,
     });
 
+    console.log('🔴 로그인 응답 전체 데이터:', res.data);
+
     const accessToken = res.data?.token?.accessToken;
     const refreshToken = res.data?.token?.refreshToken;
     console.log('🟢 accessToken:', accessToken);
