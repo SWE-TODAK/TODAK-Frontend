@@ -2,6 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import RecordButton, { RecordButtonHandle } from './RecordButton';
+import WaveVisualizer from './WaveVisualizer';
 
 // ✅ 네가 만든 모달 경로에 맞게 수정
 import ConsentModal from './modals/ConsentModal';
@@ -80,14 +81,18 @@ const RecordPanel: React.FC = () => {
       <Text style={styles.title}>진료를 녹음해보세요</Text>
       <Text style={styles.desc}>탭하면 바로 녹음이 시작돼요</Text>
 
-      <View style={styles.buttonRow}>
-        <RecordButton
-          ref={recordRef}
-          onRecordingChange={setIsRecording}
-          onTap={handleTapRecord}
-          disabled={!hasConsent && !isRecording}
-          onStopped={handleStopped}
-        />
+      <View style={styles.buttonArea}>
+        {isRecording && <WaveVisualizer />}
+
+        <View style={styles.buttonRow}>
+          <RecordButton
+            ref={recordRef}
+            onRecordingChange={setIsRecording}
+            onTap={handleTapRecord}
+            disabled={!hasConsent && !isRecording}
+            onStopped={handleStopped}
+          />
+        </View>
       </View>
 
       {/* ✅ 동의 모달 */}
@@ -132,9 +137,16 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  buttonRow: {
-    marginTop: 14,
+  buttonArea: {
+    marginTop: 24,
+    height: 90,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  buttonRow: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
 });
