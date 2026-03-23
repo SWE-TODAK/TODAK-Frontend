@@ -191,6 +191,15 @@ export const HEALTH_METRIC_CONFIG: Partial<Record<HealthMetricCategory, HealthMe
       },
     ],
     defaultSelectedSeriesKey: 'creatinine',
+    infoModal: {
+      title: '신장 기능 수치 기준',
+      bullets: [
+        '크레아티닌은 신장 기능을 확인하는 대표적인 수치예요.',
+        '일반적으로 1.2mg/dL 이하를 정상 범위로 봅니다.',
+        '수치가 높을수록 신장 기능 저하 가능성을 함께 살펴봐야 해요.',
+      ],
+      note: '근육량, 수분 상태, 검사 시점에 따라 수치 차이가 있을 수 있습니다.',
+    },
   },
 
   lipid: {
@@ -246,6 +255,16 @@ export const HEALTH_METRIC_CONFIG: Partial<Record<HealthMetricCategory, HealthMe
       },
     ],
     defaultSelectedSeriesKey: 'ldl',
+    infoModal: {
+      title: '콜레스테롤 수치 기준',
+      bullets: [
+        'LDL은 낮을수록 좋고, HDL은 높을수록 좋은 콜레스테롤로 봅니다.',
+        '중성지방과 총콜레스테롤 수치도 함께 확인해야 더 정확해요.',
+        '식습관, 운동, 체중 변화의 영향을 많이 받는 지표입니다.',
+      ],
+      note: '검사 전 공복 여부에 따라 해석이 달라질 수 있습니다.',
+    },
+    
   },
   body: {
     category: 'body',
@@ -281,5 +300,14 @@ export const HEALTH_METRIC_CONFIG: Partial<Record<HealthMetricCategory, HealthMe
       },
     ],
     defaultSelectedSeriesKey: 'weight',
+    infoModal: {
+      title: '체중 수치 기준',
+      bullets: [
+        '체중 변화는 식습관, 활동량, 수분 상태에 따라 달라질 수 있어요.',
+        '짧은 기간의 작은 변화보다 장기적인 흐름을 함께 보는 것이 중요합니다.',
+        '체중만으로 건강 상태를 모두 판단하긴 어려워요.',
+      ],
+      note: '필요하면 BMI, 체지방률 등 다른 지표와 함께 확인하는 것이 좋습니다.',
+    },
   },
 };
