@@ -70,12 +70,26 @@ const DEFAULT_METRIC_ID_MAP: Record<string, string> = {
 };
 
 type MetricHistoryItem = {
-  metricId: string; // 현재 백 응답상 사실상 metricValueId 역할
+  metricId: string;
   date: string;
-  value?: number;
-  systolic?: number;
-  diastolic?: number;
   status?: string;
+
+  // 단일 값 지표
+  value?: number;
+
+  // 혈압
+  systolic?: number | null;
+  diastolic?: number | null;
+
+  // 혈당
+  beforeMeal?: number | null;
+  afterMeal?: number | null;
+
+  // 콜레스테롤
+  totalChol?: number | null;
+  triglyceride?: number | null;
+  hdl?: number | null;
+  ldl?: number | null;
 };
 
 type MetricHistoryResponse = {
@@ -283,6 +297,7 @@ const HealthMetric: React.FC = () => {
   const chartSeries = useMemo(() => {
     if (historyData.length === 0) return [];
 
+    // 🩸 혈압 (2개)
     if (builtInCategory === 'bloodPressure') {
       return [
         {
@@ -312,6 +327,67 @@ const HealthMetric: React.FC = () => {
       ];
     }
 
+    // 🍬 혈당 (2개)
+    if (builtInCategory === 'bloodSugar') {
+      return [
+        {
+          key: 'beforeMeal',
+          label: '식전',
+          color: '#22C55E',
+          stroke: '#22C55E',
+          unit: 'mg/dL',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.beforeMeal ?? 0,
+          })),
+        },
+        {
+          key: 'afterMeal',
+          label: '식후',
+          color: '#4ADE80',
+          stroke: '#4ADE80',
+          unit: 'mg/dL',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.afterMeal ?? 0,
+          })),
+        },
+      ];
+    }
+
+    // 🧬 콜레스테롤 (2개만 선택 → LDL + HDL)
+    if (builtInCategory === 'lipid') {
+      return [
+        {
+          key: 'ldl',
+          label: 'LDL',
+          color: '#EF4444',
+          stroke: '#EF4444',
+          unit: 'mg/dL',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.ldl ?? 0,
+          })),
+        },
+        {
+          key: 'hdl',
+          label: 'HDL',
+          color: '#10B981',
+          stroke: '#10B981',
+          unit: 'mg/dL',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.hdl ?? 0,
+          })),
+        },
+      ];
+    }
+
+    // 🧍‍♀️ 나머지 (1개)
     return [
       {
         key: effectiveConfig.series[0]?.key ?? 'value',
@@ -366,38 +442,116 @@ const HealthMetric: React.FC = () => {
   const [inputOpen, setInputOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const handleSubmitMetricValue = async () => {
-    try {
-      const metricId = isCustom
-        ? customMetric?.id
-        : category
-        ? DEFAULT_METRIC_ID_MAP[category]
-        : undefined;
+  const buildMetricRequestBody = () => {
+    const metricId = isCustom
+      ? customMetric?.id
+      : category
+      ? DEFAULT_METRIC_ID_MAP[category]
+      : undefined;
 
-      if (!metricId) {
-        console.log('❌ metricId가 없습니다.');
-        return;
-      }
+    if (!metricId) {
+      throw new Error('metricId가 없습니다.');
+    }
 
-      const inputEntries = Object.entries(inputValues);
+    const date = selectedDate.toISOString();
+    const requestBody: Record<string, any> = { metricId, date };
 
-      if (inputEntries.length !== 1) {
-        console.log('❌ 현재는 입력값 1개짜리 지표만 저장 가능합니다.');
-        return;
-      }
-
-      const rawValue = inputEntries[0][1];
+    if (isCustom) {
+      const rawValue = inputValues.custom;
 
       if (!rawValue || !String(rawValue).trim()) {
-        console.log('❌ 입력값이 비어 있습니다.');
-        return;
+        throw new Error('입력값이 비어 있습니다.');
       }
 
-      const requestBody = {
-        metricId,
-        recordedAt: selectedDate.toISOString(),
-        value: Number(rawValue),
-      };
+      requestBody.value = Number(rawValue);
+      return requestBody;
+    }
+
+    switch (builtInCategory) {
+      case 'body': {
+        const rawValue = inputValues.weight;
+
+        if (!rawValue || !String(rawValue).trim()) {
+          throw new Error('체중 입력값이 비어 있습니다.');
+        }
+
+        requestBody.value = Number(rawValue);
+        return requestBody;
+      }
+
+      case 'liver': {
+        const rawValue = inputValues.alt;
+
+        if (!rawValue || !String(rawValue).trim()) {
+          throw new Error('간 수치 입력값이 비어 있습니다.');
+        }
+
+        requestBody.value = Number(rawValue);
+        return requestBody;
+      }
+
+      case 'kidney': {
+        const rawValue = inputValues.creatinine;
+
+        if (!rawValue || !String(rawValue).trim()) {
+          throw new Error('신장 수치 입력값이 비어 있습니다.');
+        }
+
+        requestBody.value = Number(rawValue);
+        return requestBody;
+      }
+
+      case 'bloodPressure': {
+        const systolic = inputValues.systolic;
+        const diastolic = inputValues.diastolic;
+
+        if (!systolic || !diastolic) {
+          throw new Error('혈압 입력값이 비어 있습니다.');
+        }
+
+        requestBody.systolic = Number(systolic);
+        requestBody.diastolic = Number(diastolic);
+        return requestBody;
+      }
+
+      case 'bloodSugar': {
+        const beforeMeal = inputValues.beforeMeal;
+        const afterMeal = inputValues.afterMeal;
+
+        if (!beforeMeal || !afterMeal) {
+          throw new Error('혈당 입력값이 비어 있습니다.');
+        }
+
+        requestBody.beforeMeal = Number(beforeMeal);
+        requestBody.afterMeal = Number(afterMeal);
+        return requestBody;
+      }
+
+      case 'lipid': {
+        const totalChol = inputValues.totalChol;
+        const triglyceride = inputValues.triglyceride;
+        const hdl = inputValues.hdl;
+        const ldl = inputValues.ldl;
+
+        if (!totalChol || !triglyceride || !hdl || !ldl) {
+          throw new Error('콜레스테롤 입력값이 비어 있습니다.');
+        }
+
+        requestBody.totalChol = Number(totalChol);
+        requestBody.triglyceride = Number(triglyceride);
+        requestBody.hdl = Number(hdl);
+        requestBody.ldl = Number(ldl);
+        return requestBody;
+      }
+
+      default:
+        throw new Error('아직 지원하지 않는 지표입니다.');
+    }
+  };
+
+  const handleSubmitMetricValue = async () => {
+    try {
+      const requestBody = buildMetricRequestBody();
 
       console.log('✅ 건강 수치 저장 요청:', requestBody);
 
@@ -411,11 +565,10 @@ const HealthMetric: React.FC = () => {
       setInputValues({});
       setSelectedDate(new Date());
       setInputOpen(false);
-
     } catch (error: any) {
       console.error(
         '❌ 건강 수치 저장 실패:',
-        error?.response?.data || error
+        error?.response?.data || error?.message || error
       );
     }
   };
@@ -463,9 +616,19 @@ const HealthMetric: React.FC = () => {
   type SelectedDetailState = {
     metricValueId?: string;
     date: string;
+
     value?: number;
+
     systolic?: number | null;
     diastolic?: number | null;
+
+    beforeMeal?: number | null;
+    afterMeal?: number | null;
+
+    totalChol?: number | null;
+    triglyceride?: number | null;
+    hdl?: number | null;
+    ldl?: number | null;
   };
 
   const [selectedDetail, setSelectedDetail] = useState<SelectedDetailState | null>(null);
@@ -689,9 +852,19 @@ const HealthMetric: React.FC = () => {
                       return {
                         metricValueId: selected.metricId,
                         date: selected.date,
+
                         value: selected.value,
+
                         systolic: selected.systolic,
                         diastolic: selected.diastolic,
+
+                        beforeMeal: selected.beforeMeal,
+                        afterMeal: selected.afterMeal,
+
+                        totalChol: selected.totalChol,
+                        triglyceride: selected.triglyceride,
+                        hdl: selected.hdl,
+                        ldl: selected.ldl,
                       };
                     });
 
@@ -725,6 +898,30 @@ const HealthMetric: React.FC = () => {
                 </Text>
                 <Text style={styles.detailValue}>
                   이완기 {selectedDetail.diastolic ?? '-'}mmHg
+                </Text>
+              </>
+            ) : builtInCategory === 'bloodSugar' ? (
+              <>
+                <Text style={styles.detailValue}>
+                  식전 {selectedDetail.beforeMeal ?? '-'}mg/dL
+                </Text>
+                <Text style={styles.detailValue}>
+                  식후 {selectedDetail.afterMeal ?? '-'}mg/dL
+                </Text>
+              </>
+            ) : builtInCategory === 'lipid' ? (
+              <>
+                <Text style={styles.detailValue}>
+                  총콜레스테롤 {selectedDetail.totalChol ?? '-'}mg/dL
+                </Text>
+                <Text style={styles.detailValue}>
+                  중성지방 {selectedDetail.triglyceride ?? '-'}mg/dL
+                </Text>
+                <Text style={styles.detailValue}>
+                  HDL {selectedDetail.hdl ?? '-'}mg/dL
+                </Text>
+                <Text style={styles.detailValue}>
+                  LDL {selectedDetail.ldl ?? '-'}mg/dL
                 </Text>
               </>
             ) : (
