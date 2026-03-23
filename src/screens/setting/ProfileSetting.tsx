@@ -4,6 +4,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Toast from '../../components/common/Toast';
+import WithdrawModal from '../../components/Setting/WithdrawModal';
 
 import {
   SafeAreaView,
@@ -32,14 +33,21 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProfileSetting'>;
 export default function ProfileSetting({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
 
+  // 유저 로그인 제공자 (LOCAL or KAKAO)
+  const [loginProvider, setLoginProvider] = useState<'LOCAL' | 'KAKAO'>('LOCAL');
+
   const [kakaoEasyLogin, setKakaoEasyLogin] = useState(false);
   const [kakaoModalVisible, setKakaoModalVisible] = useState(false);
   const [pendingKakaoEasyLogin, setPendingKakaoEasyLogin] = useState<boolean | null>(null);
 
   const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
-  const [withdrawVisible, setWithdrawVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+
+  // 탈퇴 관련 상태
+  const [withdrawVisible, setWithdrawVisible] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState('');
+  const [withdrawPasswordError, setWithdrawPasswordError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<null | 'nickname' | 'email'>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -60,14 +68,12 @@ export default function ProfileSetting({ navigation }: Props) {
     setTimeout(() => setToastVisible(false), 1400);
   };
 
-  // ✅ 1. 프로필 설정 화면 상세 조회 (GET /users/me/profile)
   useEffect(() => {
     const fetchData = async () => {
       try {
         const profileRes = await instance.get('/users/me/profile');
         const data = profileRes.data?.data || profileRes.data;
 
-        // 명세서 키값 매핑 (nickname, birthDate, gender, kakaoLinked)
         setNicknameDraft(data.nickname || '');
         setEmailDraft(data.email || '');
         setBirthDraft(data.birthDate || '');
@@ -77,6 +83,8 @@ export default function ProfileSetting({ navigation }: Props) {
 
         setProfileImageUri(data.profileImageUrl || null);
         setKakaoEasyLogin(data.kakaoLinked || false);
+
+        setLoginProvider(data.provider === 'KAKAO' ? 'KAKAO' : 'LOCAL');
 
       } catch (error: any) {
         console.log('프로필 조회 API 에러:', error.response?.data || error.message);
@@ -98,7 +106,11 @@ export default function ProfileSetting({ navigation }: Props) {
 
   const endEdit = () => setEditing(null);
 
-  // ✅ 2. 닉네임 수정 (PATCH /users/me/profile/name)
+  const handleSessionClear = async () => {
+    await clearAllTokens();
+    navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+  };
+
   const commitNickname = async () => {
     endEdit();
     try {
@@ -110,7 +122,6 @@ export default function ProfileSetting({ navigation }: Props) {
     }
   };
 
-  // ✅ 3. 이메일 수정 (PATCH /users/me/profile/email)
   const commitEmail = async () => {
     const v = emailDraft.trim();
     if (!isValidEmail(v)) {
@@ -145,7 +156,6 @@ export default function ProfileSetting({ navigation }: Props) {
     setSexModalVisible(true);
   };
 
-  // ✅ 4. 성별 수정 (PATCH /users/me/profile/sex)
   const commitSex = async (next: 'M' | 'F') => {
     if (next === sexDraft) {
       setSexModalVisible(false);
@@ -163,7 +173,6 @@ export default function ProfileSetting({ navigation }: Props) {
     }
   };
 
-  // ✅ 5. 생년월일 수정 (PATCH /users/me/profile/birth)
   const commitBirth = async (next: string) => {
     try {
       await instance.patch('/users/me/profile/birth', { birthDate: next });
@@ -181,16 +190,13 @@ export default function ProfileSetting({ navigation }: Props) {
     setProfileModalVisible(true);
   };
 
-  // ✅ 6. 프로필 이미지 변경 (추가/수정: PATCH, 삭제: DELETE)
   const handleImageUpload = async (uri: string | null) => {
     try {
       if (!uri) {
-        // ✅ 이미지 삭제 API 연동 (DELETE 요청은 Body가 없음)
         await instance.delete('/users/me/profile/image');
         setProfileImageUri(null);
         showToast('기본 이미지로 변경됐어요');
       } else {
-        // ✅ 이미지 등록/수정 API 연동 (PATCH)
         await instance.patch('/users/me/profile/image', { profileImageUrl: uri });
         setProfileImageUri(uri);
         showToast('저장됐어요');
@@ -208,7 +214,6 @@ export default function ProfileSetting({ navigation }: Props) {
     setKakaoModalVisible(true);
   };
 
-  // ✅ 7. 카카오 계정 연결 / 해제
   const confirmKakaoEasyLogin = async () => {
     if (pendingKakaoEasyLogin === null) return;
     const next = pendingKakaoEasyLogin;
@@ -233,60 +238,50 @@ export default function ProfileSetting({ navigation }: Props) {
     setPendingKakaoEasyLogin(null);
   };
 
-// ✅ 8. 로그아웃 API
   const handleLogout = async () => {
     setLogoutVisible(false);
     try {
-      // 1. 스토리지에서 리프레시 토큰 꺼내기
       const refreshToken = await getRefreshToken();
-
-      // 2. Axios POST 요청 바디에 토큰 담아서 보내기
       await instance.post('/auth/logout', {
         refreshToken: refreshToken
       });
-
     } catch (e: any) {
       console.log('로그아웃 API 실패:', e.response?.data || e.message);
-
-      // 로그아웃 실패 에러 메시지도 토스트로 띄워주기 
       const errMsg = e.response?.data?.message || '로그아웃 처리 중 오류가 발생했어요';
       showToast(errMsg);
     } finally {
-      // 3. 백엔드 통신 성공 여부와 상관없이, 프론트엔드 기기 내 토큰은 싹 지우고 로그인 화면으로 이동
-      await clearAllTokens();
-      navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+      await handleSessionClear();
     }
   };
 
-// ✅ 9. 회원탈퇴 API
   const handleWithdraw = async () => {
-    setWithdrawVisible(false);
+    if (loginProvider === 'LOCAL' && !withdrawPassword) {
+      setWithdrawPasswordError('비밀번호를 입력해주세요.');
+      return;
+    }
+
     try {
-      // 1. 스토리지에서 리프레시 토큰 꺼내기
-      const refreshToken = await getRefreshToken();
+      const body = loginProvider === 'LOCAL' ? { password: withdrawPassword } : {};
+      await instance.delete('/auth/me', { data: body });
 
-      // 2. Axios DELETE 요청에 Body 데이터(data) 담아서 보내기
-      await instance.delete('/auth/users/delete', {
-        data: {
-          refreshToken: refreshToken,
-          reason: "사용자 앱 내 탈퇴 요청" // 명세서에 선택사항(null 가능)으로 되어있어 임의로 추가
-        }
-      });
-
-      // 3. 탈퇴 성공 시 토큰 싹 지우고 로그인 화면으로 이동
-      await clearAllTokens();
-      showToast('탈퇴가 완료되었습니다.');
-
-      setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
-      }, 1000);
+      setWithdrawVisible(false);
+      setWithdrawPassword('');
+      await handleSessionClear();
 
     } catch (e: any) {
-      console.log('회원탈퇴 API 에러:', e.response?.data || e.message);
+      const status = e.response?.status;
+      const msg = e.response?.data?.message || '회원탈퇴 처리 중 오류가 발생했습니다.';
 
-      // 명세서에 정의된 백엔드 에러 메시지(401, 404, 500 등)를 그대로 띄워줌
-      const errMsg = e.response?.data?.message || '탈퇴 처리 중 오류가 발생했어요';
-      showToast(errMsg);
+      if (status === 400 && loginProvider === 'LOCAL' && msg.includes('비밀번호')) {
+        setWithdrawPasswordError('비밀번호가 일치하지 않습니다.');
+      } else if (status === 404 || status === 409 || status === 401) {
+        setWithdrawVisible(false);
+        showToast(msg);
+        setTimeout(() => { handleSessionClear(); }, 1200);
+      } else {
+        showToast(msg);
+        setWithdrawVisible(false);
+      }
     }
   };
 
@@ -383,7 +378,7 @@ export default function ProfileSetting({ navigation }: Props) {
             <Image source={require('../../assets/icons/arrow-right.png')} style={styles.chevron} resizeMode="contain" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => setWithdrawVisible(true)}>
+          <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => { setWithdrawPassword(''); setWithdrawPasswordError(null); setWithdrawVisible(true); }}>
             <Text style={styles.menuText}>회원탈퇴</Text>
             <Image source={require('../../assets/icons/arrow-right.png')} style={styles.chevron} resizeMode="contain" />
           </TouchableOpacity>
@@ -457,14 +452,14 @@ export default function ProfileSetting({ navigation }: Props) {
         onConfirm={handleLogout}
       />
 
-      <ConfirmModal
+      {/* 분리된 커스텀 모달 컴포넌트 사용 */}
+      <WithdrawModal
         visible={withdrawVisible}
-        title="회원탈퇴"
-        message="정말 탈퇴하시겠습니까?"
-        cancelText="취소"
-        confirmText="확인"
-        confirmColor="#EF4444"
-        onCancel={() => setWithdrawVisible(false)}
+        provider={loginProvider}
+        password={withdrawPassword}
+        setPassword={(val: string) => { setWithdrawPassword(val); setWithdrawPasswordError(null); }}
+        errorText={withdrawPasswordError}
+        onClose={() => setWithdrawVisible(false)}
         onConfirm={handleWithdraw}
       />
 
