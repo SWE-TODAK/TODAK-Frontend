@@ -4,6 +4,14 @@ import { View, Text, StyleSheet } from 'react-native';
 import RecordButton, { RecordButtonHandle } from './RecordButton';
 import WaveVisualizer from './WaveVisualizer';
 
+import {
+  startRecordingUpload,
+  notifyRecordingUploaded,
+  startRecordingStt,
+} from '../../../api/recordingApi';
+import uploadToS3 from '../../../utils/uploadToS3.ts';
+import pollJobUntilDone from '../../../utils/pollJobStatus.ts';
+
 // ✅ 네가 만든 모달 경로에 맞게 수정
 import ConsentModal from './modals/ConsentModal';
 import CompleteModal from './modals/CompleteModal';
@@ -57,6 +65,9 @@ const RecordPanel: React.FC = () => {
     durationText: string;
     dateText: string;
   }) => {
+    setAudioPath(data.path);
+    console.log('녹음 파일 path:', data.path);
+
     setRecordInfo({
       dateText: data.dateText,
       durationText: data.durationText,
@@ -66,15 +77,82 @@ const RecordPanel: React.FC = () => {
   };
 
   // ✅ 완료 모달에서 완료 눌렀을 때
-  const handleSubmitComplete = (payload: { hospital: string }) => {
-    // TODO: 나중에 백 연결
-    // console.log('submit payload:', payload);
+  const handleSubmitComplete = async (payload: { hospital: string }) => {
+    if (!audioPath) {
+      console.log('녹음 파일 경로가 없습니다.');
+      return;
+    }
 
-    setShowComplete(false);
+    try {
+      setShowComplete(false);
+      setIsProcessing(true);
 
-    // ✅ 다음 녹음 때는 다시 동의 받게 하고 싶다 했으니 reset
-    setHasConsent(false);
+      // 1. 업로드 시작 요청
+      setProcessMessage('업로드 준비 중입니다.');
+
+      const uploadStart = await startRecordingUpload({
+        mimeType: 'audio/wav',
+      });
+      const { recordingId, storageKey, uploadUrl, mimeType } = uploadStart;
+
+      console.log('1. upload start success:', uploadStart);
+
+      // 2. S3 직접 업로드
+      setProcessMessage('녹음 파일을 업로드 중입니다.');
+
+      await uploadToS3({
+        uploadUrl,
+        filePath: audioPath,
+        mimeType,
+      });
+
+      console.log('2. s3 upload success');
+
+      // 3. 업로드 완료 알림
+      setProcessMessage('업로드 완료 처리 중입니다.');
+
+      await notifyRecordingUploaded(recordingId, {
+        storageKey,
+        mimeType,
+        durationMs: 9000,
+        sampleRate: 16000,
+      });
+
+      console.log('3. uploaded notify success');
+
+      // 4. STT 시작
+      setProcessMessage('텍스트 변환 요청 중입니다.');
+
+      const sttResult = await startRecordingStt(recordingId);
+      const newJobId = sttResult.jobId;
+
+      setJobId(newJobId);
+
+      console.log('4. stt start success:', sttResult);
+
+      // 5. polling
+      setProcessMessage('녹음 내용을 텍스트로 변환하고 있습니다.');
+
+      const finalJobResult = await pollJobUntilDone(newJobId);
+
+      console.log('5. polling success:', finalJobResult);
+
+      setProcessMessage('텍스트 변환이 완료되었습니다.');
+
+      // 다음 녹음을 위해 초기화
+      setHasConsent(false);
+    } catch (error) {
+      console.log('녹음 처리 실패:', error);
+      setProcessMessage('텍스트 변환에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  const [audioPath, setAudioPath] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processMessage, setProcessMessage] = useState('');
+  const [jobId, setJobId] = useState<string | null>(null);
 
   return (
     <View style={styles.panel}>
@@ -150,3 +228,4 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 });
+

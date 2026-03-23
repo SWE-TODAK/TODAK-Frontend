@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 
-const BAR_COUNT = 15;
+const BAR_COUNT = 50;
 
 const WaveVisualizer = () => {
   const animValues = useRef(
@@ -13,10 +13,10 @@ const WaveVisualizer = () => {
       const center = (BAR_COUNT - 1) / 2;
       const distance = Math.abs(i - center);
 
-      const baseHeight = 130 - distance * 10;   // 중앙이 크고, 바깥으로 갈수록 작아짐
+      const baseHeight = 90 - distance * 10;   // 중앙이 크고, 바깥으로 갈수록 작아짐
       const randomOffset = Math.random() * 16 - 8; // -8 ~ +8 정도 흔들림
 
-      return Math.max(35, baseHeight + randomOffset);
+      return Math.max(60, baseHeight + randomOffset);
     }),
   ).current;
 
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bar: {
-    width: 8,
-    marginHorizontal: 4,
+    width: 3,
+    marginHorizontal: 2,
     borderRadius: 999,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#AEB3BD',
   },
 });
