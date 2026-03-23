@@ -78,19 +78,32 @@ export const HEALTH_METRIC_CONFIG: Partial<Record<HealthMetricCategory, HealthMe
       ticks: [50, 100, 150, 200],
     },
     series: [
-      {
-        key: 'glucose',
-        label: '혈당',
-        color: '#22C55E',
-        unit: 'mg/dL',
-        zones: [
-          { min: 0, max: 70, level: 'danger', label: '저혈당' },
-          { min: 70, max: 99, level: 'normal', label: '정상' },
-          { min: 100, max: 125, level: 'warning', label: '주의' },
-          { min: 126, max: 200, level: 'danger', label: '고혈당' },
-        ],
-      },
-    ],
+    {
+      key: 'beforeMeal',
+      label: '식전',
+      color: '#22C55E',
+      unit: 'mg/dL',
+      zones: [
+        { min: 0, max: 70, level: 'danger', label: '저혈당' },
+        { min: 70, max: 99, level: 'normal', label: '정상' },
+        { min: 100, max: 125, level: 'warning', label: '주의' },
+        { min: 126, max: 200, level: 'danger', label: '고혈당' },
+      ],
+    },
+    {
+      key: 'afterMeal',
+      label: '식후',
+      color: '#4ADE80',
+      unit: 'mg/dL',
+      zones: [
+        { min: 0, max: 70, level: 'danger', label: '저혈당' },
+        { min: 70, max: 139, level: 'normal', label: '정상' },
+        { min: 140, max: 199, level: 'warning', label: '주의' },
+        { min: 200, max: 240, level: 'danger', label: '고혈당' },
+      ],
+    },
+  ],
+
     inputFields: [
     {
       key: 'beforeMeal',
@@ -109,7 +122,7 @@ export const HEALTH_METRIC_CONFIG: Partial<Record<HealthMetricCategory, HealthMe
       required: true,
     },
   ],
-    defaultSelectedSeriesKey: 'glucose',
+    defaultSelectedSeriesKey: 'beforeMeal',
     infoModal: {
       title: '혈당 수치 기준',
       bullets: [
