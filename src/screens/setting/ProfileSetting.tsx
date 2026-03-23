@@ -84,7 +84,11 @@ export default function ProfileSetting({ navigation }: Props) {
         setProfileImageUri(data.profileImageUrl || null);
         setKakaoEasyLogin(data.kakaoLinked || false);
 
-        setLoginProvider(data.provider === 'KAKAO' ? 'KAKAO' : 'LOCAL');
+        if (data.hasPassword === false) {
+          setLoginProvider('KAKAO');
+        } else {
+          setLoginProvider('LOCAL');
+        }
 
       } catch (error: any) {
         console.log('프로필 조회 API 에러:', error.response?.data || error.message);
