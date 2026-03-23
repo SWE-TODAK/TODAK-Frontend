@@ -24,6 +24,8 @@ export default function HealthMetricScroller<T>({
   renderYAxis,
   showEmptyText = true,
 }: Props<T>) {
+
+  
   const chartWidth = useMemo(() => {
     const minWidth = SCREEN_WIDTH - 40 - yAxisWidth; // 카드 padding(20*2) + 축 너비
     const w = Math.max(minWidth, records.length * pointGap);
@@ -68,7 +70,7 @@ const styles = StyleSheet.create({
   },
   yAxis: {
     justifyContent: 'flex-start',
-    backgroundColor: '#FFFFFF', // ✅ 카드랑 같은 흰색 추천
+    backgroundColor: '#FFFFFF', 
   },
   empty: {
     paddingHorizontal: 20,

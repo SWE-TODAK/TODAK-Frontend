@@ -1,5 +1,6 @@
 // src/screens/HealthMetric.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import api from '../../api/axios';
 import {
   View,
   Text,
@@ -22,6 +23,13 @@ import MetricInfoModal from '../../components/Health/chart-ui/MetricInfoModal';
 import MetricInputModal from '../../components/Health/chart-ui/MetricInputModal';
 import { HEALTH_METRIC_CONFIG } from '../../components/Health/healthMetricConfig';
 
+import type {
+  HealthMetricCategory,
+  HealthMetricConfig,
+  MetricSeriesConfig,
+  MetricInputFieldConfig,
+} from '../../components/Health/types/healthMetric.types';
+
 import {
   bloodPressureMockRecords,
   bloodSugarMockRecords,
@@ -29,7 +37,7 @@ import {
   kidneyMockRecords,
   lipidMockRecords,
   bodyMockRecords,
-} from '../../components/Health/chart-core/healthMetricMockData.ts';
+} from '../../components/Health/chart-core/healthMetricMockData';
 
 import {
   buildBloodPressureChartSeries,
@@ -47,12 +55,37 @@ import ResultCard from '../../components/Health/ResultCard';
 
 import { HealthStackParamList } from '../../navigation/HealthStackNavigator';
 
+import { useHealthMetricStore } from '../../store/useHealthMetricStore';
+
 type NavProp = NativeStackNavigationProp<HealthStackParamList, 'HealthMetric'>;
 type RouteProps = RouteProp<HealthStackParamList, 'HealthMetric'>;
 
+const DEFAULT_METRIC_ID_MAP: Record<string, string> = {
+  bloodPressure: 'm-1',
+  body: 'm-2',
+  bloodSugar: 'm-3',
+  lipid: 'm-4',
+  liver: 'm-6',
+  kidney: 'm-7',
+};
+
+type MetricHistoryItem = {
+  metricId: string;
+  date: string;
+  value?: number;
+  systolic?: number;
+  diastolic?: number;
+  status?: string;
+};
+
+type MetricHistoryResponse = {
+  metricType?: string;
+  history?: MetricHistoryItem[];
+};
+
 /**
- * 스크롤러에는 x축 라벨만 넘기면 되므로
- * 화면에서는 최소 구조만 따로 맞춰서 사용합니다.
+ * HealthMetricScroller는 x축 라벨만 필요하므로
+ * 화면에서는 최소 구조만 따로 맞춰서 넘깁니다.
  */
 type DisplayRecord = {
   xLabel: string;
@@ -65,6 +98,22 @@ type Anchor = {
   height: number;
 };
 
+const formatChartDateLabel = (dateText: string) => {
+  if (!dateText) return '';
+
+  // 예: "2026-03-22/일" -> "2026-03-22"
+  const onlyDate = dateText.split('/')[0];
+  const parts = onlyDate.split('-');
+
+  if (parts.length !== 3) return onlyDate;
+
+  const month = parts[1];
+  const day = parts[2];
+
+  return `${month}.${day}`;
+};
+
+
 const HealthMetric: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
@@ -72,32 +121,143 @@ const HealthMetric: React.FC = () => {
 
   /**
    * 라우트 파라미터
-   * - title: 헤더 제목
-   * - category: 지표 구분 키
+   * - 기본 지표: category 있음
+   * - 커스텀 지표: isCustom=true, customMetric 있음
    */
-  const { title, category } = route.params;
+  const { title, category, isCustom = false, customMetric } = route.params;
 
   /**
-   * 현재 카테고리에 맞는 지표 설정
-   * 설정이 없으면 렌더링하지 않음
+   * 기본 지표 category를 타입 안전하게 분리
+   * 커스텀 지표일 때는 undefined
    */
-  const config = HEALTH_METRIC_CONFIG[category];
-  if (!config) {
+  const builtInCategory: HealthMetricCategory | undefined =
+    !isCustom && category ? (category as HealthMetricCategory) : undefined;
+
+  /**
+   * 기본 지표 config
+   */
+  const builtInConfig = builtInCategory
+    ? HEALTH_METRIC_CONFIG[builtInCategory]
+    : undefined;
+
+    
+
+  /**
+   * 커스텀 지표용 임시 config
+   * - 아직 데이터가 없으므로 기본 축/입력만 세팅
+   * - 건강 정보 안내 / 진단 결과는 사용하지 않음
+   */
+  const customConfig: HealthMetricConfig = {
+    category: 'body',
+    title,
+    chartTitle: `${title} 변화 추이`,
+    unit: customMetric?.unit ?? '',
+    yAxis: {
+      min: 0,
+      max: 100,
+      ticks: [0, 25, 50, 75, 100],
+    },
+    series: [
+      {
+        key: 'custom',
+        label: title,
+        color: '#2563EB',
+        unit: customMetric?.unit ?? '',
+      },
+    ],
+    inputFields: [
+      {
+        key: 'custom',
+        label: title,
+        placeholder: '값 입력',
+        keyboardType: 'numeric',
+        unit: customMetric?.unit ?? '',
+        required: true,
+      },
+    ],
+    defaultSelectedSeriesKey: 'custom',
+  };
+
+  /**
+   * 화면 전체에서 항상 사용할 config
+   * => 이제부터는 config 대신 effectiveConfig만 씀
+   */
+  const effectiveConfig: HealthMetricConfig = isCustom
+    ? customConfig
+    : (builtInConfig as HealthMetricConfig);
+
+  /**
+   * 기본 지표인데 config가 없으면 렌더링 중단
+   */
+  if (!isCustom && !builtInConfig) {
     return null;
   }
+
+  const metricId = isCustom
+  ? customMetric?.id
+  : category
+  ? DEFAULT_METRIC_ID_MAP[category]
+  : undefined;
+
+    const [historyData, setHistoryData] = useState<MetricHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    const fetchMetricHistory = async (limit: number) => {
+      try {
+
+
+        if (!metricId) {
+          console.log('❌ 추이 조회용 metricId가 없습니다.');
+          return;
+        }
+
+        setHistoryLoading(true);
+
+      
+
+        const response = await api.get(`/health/metrics/${metricId}/query`, {
+          params: { limit },
+        });
+
+        //console.log('✅ 건강 수치 추이 조회 응답:', response.data);
+
+        const history: MetricHistoryItem[] = response.data?.data?.history ?? [];
+
+        setHistoryData(history);
+      } catch (error: any) {
+        console.error(
+          '❌ 건강 수치 추이 조회 실패:',
+          error?.response?.data || error
+        );
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    
+    
 
   // ------------------------------
   // 최근 기록 필터 상태
   // ------------------------------
-  const [recordFilter, setRecordFilter] = useState<number | 'all'>(7);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [customFilterValue, setCustomFilterValue] = useState(
-    String(recordFilter === 'all' ? 7 : recordFilter)
-  );
+  const recordFilter = useHealthMetricStore((state) => state.recordFilter);
+  const setRecordFilter = useHealthMetricStore((state) => state.setRecordFilter);
+
+  const filterModalOpen = useHealthMetricStore((state) => state.filterModalOpen);
+  const setFilterModalOpen = useHealthMetricStore((state) => state.setFilterModalOpen);
+
+  const customFilterValue = useHealthMetricStore((state) => state.customFilterValue);
+  const setCustomFilterValue = useHealthMetricStore((state) => state.setCustomFilterValue);
+
+
+  useEffect(() => {
+    const limit = recordFilter === 'all' ? 30 : Number(recordFilter);
+
+    fetchMetricHistory(limit);
+  }, [metricId, recordFilter]);
 
   // ------------------------------
-  // 화면에 표시할 x축 레코드
-  // Scroller는 xLabel만 사용하므로 최소 구조로 맞춤
+  // mock 데이터 안전 처리
   // ------------------------------
   const safeBloodPressureRecords = bloodPressureMockRecords ?? [];
   const safeBloodSugarRecords = bloodSugarMockRecords ?? [];
@@ -105,142 +265,74 @@ const HealthMetric: React.FC = () => {
   const safeKidneyRecords = kidneyMockRecords ?? [];
   const safeLipidRecords = lipidMockRecords ?? [];
   const safeBodyRecords = bodyMockRecords ?? [];
+
+  // ------------------------------
+  // 화면에 표시할 x축 레코드
+  // 커스텀 지표는 현재 데이터가 없으므로 빈 배열
+  // ------------------------------
   const displayRecords: DisplayRecord[] = useMemo(() => {
-    switch (category) {
-      case 'bloodPressure': {
-        const records =
-          recordFilter === 'all'
-            ? safeBloodPressureRecords
-            : safeBloodPressureRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-
-      case 'bloodSugar': {
-        const records =
-          recordFilter === 'all'
-            ? safeBloodSugarRecords
-            : safeBloodSugarRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-      case 'liver': {
-        const records =
-          recordFilter === 'all'
-            ? safeLiverRecords
-            : safeLiverRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-      case 'kidney': {
-        const records =
-          recordFilter === 'all'
-            ? safeKidneyRecords
-            : safeKidneyRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-      case 'lipid': {
-        const records =
-          recordFilter === 'all'
-            ? safeLipidRecords
-            : safeLipidRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-      case 'body': {
-        const records =
-          recordFilter === 'all'
-            ? safeBodyRecords
-            : safeBodyRecords.slice(-recordFilter);
-
-        return records.map(record => ({
-          xLabel: record.xLabel,
-        }));
-      }
-
-      default:
-        return [];
-    }
-  }, [category, recordFilter, safeBloodPressureRecords, safeBloodSugarRecords]);
+    return historyData.map((record) => ({
+      xLabel: formatChartDateLabel(record.date),
+    }));
+  }, [historyData]);
 
   // ------------------------------
   // 차트에 넘길 series 데이터
-  // 현재는 더미 데이터 기반, 나중에 API 데이터로 교체 가능
+  // 커스텀 지표는 현재 데이터 없으므로 빈 배열
   // ------------------------------
   const chartSeries = useMemo(() => {
-    switch (category) {
-      case 'bloodPressure': {
-        const records =
-          recordFilter === 'all'
-            ? safeBloodPressureRecords
-            : safeBloodPressureRecords.slice(-recordFilter);
+    if (historyData.length === 0) return [];
 
-        return buildBloodPressureChartSeries(records, config.series);
-      }
-
-      case 'bloodSugar': {
-        const records =
-          recordFilter === 'all'
-            ? safeBloodSugarRecords
-            : safeBloodSugarRecords.slice(-recordFilter);
-
-        return buildBloodSugarChartSeries(records, config.series);
-      }
-
-      case 'liver': {
-        const records =
-          recordFilter === 'all'
-            ? safeLiverRecords
-            : safeLiverRecords.slice(-recordFilter);
-
-        return buildLiverChartSeries(records, config.series);
-      }
-      case 'kidney': {
-        const records =
-          recordFilter === 'all'
-            ? safeKidneyRecords
-            : safeKidneyRecords.slice(-recordFilter);
-
-        return buildKidneyChartSeries(records, config.series);
-      }
-      case 'lipid': {
-        const records =
-          recordFilter === 'all'
-            ? safeLipidRecords
-            : safeLipidRecords.slice(-recordFilter);
-
-        return buildLipidChartSeries(records, config.series);
-      }
-      case 'body': {
-        const records =
-          recordFilter === 'all'
-            ? safeBodyRecords
-            : safeBodyRecords.slice(-recordFilter);
-
-        return buildBodyChartSeries(records, config.series);
-      }
-
-      default:
-        return [];
+    if (builtInCategory === 'bloodPressure') {
+      return [
+        {
+          key: 'systolic',
+          label: '수축기',
+          color: '#2563EB',
+          stroke: '#2563EB',
+          unit: 'mmHg',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.systolic ?? 0,
+          })),
+        },
+        {
+          key: 'diastolic',
+          label: '이완기',
+          color: '#60A5FA',
+          stroke: '#60A5FA',
+          unit: 'mmHg',
+          data: historyData.map((item, index) => ({
+            index,
+            xLabel: formatChartDateLabel(item.date),
+            value: item.diastolic ?? 0,
+          })),
+        },
+      ];
     }
-  }, [
-    category,
-    recordFilter,
-    config.series,
-    safeBloodPressureRecords,
-    safeBloodSugarRecords,
-  ]);
+
+    return [
+      {
+        key: effectiveConfig.series[0]?.key ?? 'value',
+        label: effectiveConfig.series[0]?.label ?? title,
+        color: effectiveConfig.series[0]?.color ?? '#2563EB',
+        stroke: effectiveConfig.series[0]?.color ?? '#2563EB',
+        unit: effectiveConfig.series[0]?.unit ?? effectiveConfig.unit,
+        data: historyData.map((item, index) => ({
+          index,
+          xLabel: formatChartDateLabel(item.date),
+          value: item.value ?? 0,
+        })),
+      },
+    ];
+  }, [historyData, builtInCategory, effectiveConfig, title]);
+
+  /**
+   * 커스텀 지표이거나 데이터가 없을 때 빈 상태 표시용
+   */
+  const isEmptyData =
+    chartSeries.length === 0 || chartSeries.every(s => s.data.length === 0);
 
   // ------------------------------
   // 정보 모달 상태
@@ -250,9 +342,11 @@ const HealthMetric: React.FC = () => {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
 
   /**
-   * 정보 버튼 위치를 측정해서 모달 anchor로 사용
+   * 정보 버튼 위치 측정 -> info modal anchor
    */
   const openInfo = () => {
+    if (isCustom) return;
+
     const node = findNodeHandle(infoRef.current);
 
     if (!node) {
@@ -270,14 +364,65 @@ const HealthMetric: React.FC = () => {
   // 입력 모달 상태
   // ------------------------------
   const [inputOpen, setInputOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const handleSubmitMetricValue = async () => {
+    try {
+      const metricId = isCustom
+        ? customMetric?.id
+        : category
+        ? DEFAULT_METRIC_ID_MAP[category]
+        : undefined;
+
+      if (!metricId) {
+        console.log('❌ metricId가 없습니다.');
+        return;
+      }
+
+      const inputEntries = Object.entries(inputValues);
+
+      if (inputEntries.length !== 1) {
+        console.log('❌ 현재는 입력값 1개짜리 지표만 저장 가능합니다.');
+        return;
+      }
+
+      const rawValue = inputEntries[0][1];
+
+      if (!rawValue || !String(rawValue).trim()) {
+        console.log('❌ 입력값이 비어 있습니다.');
+        return;
+      }
+
+      const requestBody = {
+        metricId,
+        recordedAt: selectedDate.toISOString(),
+        value: Number(rawValue),
+      };
+
+      console.log('✅ 건강 수치 저장 요청:', requestBody);
+
+      const response = await api.post('/health/metrics/batch', requestBody);
+
+      console.log('✅ 건강 수치 저장 응답:', response.data);
+
+      const limit = recordFilter === 'all' ? 30 : Number(recordFilter);
+      await fetchMetricHistory(limit);
+
+      setInputValues({});
+      setSelectedDate(new Date());
+      setInputOpen(false);
+
+    } catch (error: any) {
+      console.error(
+        '❌ 건강 수치 저장 실패:',
+        error?.response?.data || error
+      );
+    }
+  };
 
   /**
-   * 입력값은 지표마다 필드 개수가 다를 수 있으므로
-   * 공통 Record<string, string> 구조로 관리
-   *
-   * 예시
-   * - 혈압: { sys: '120', dia: '80' }
-   * - 혈당: { glucose: '95' }
+   * 입력값은 지표마다 field 개수가 다르므로
+   * Record<string, string> 형태로 관리
    */
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
@@ -288,66 +433,79 @@ const HealthMetric: React.FC = () => {
     }));
   };
 
+
+
   // ------------------------------
   // 선택된 series 상태
-  // 혈압: sys / dia
-  // 혈당: glucose
   // ------------------------------
-  const [selectedSeriesKey, setSelectedSeriesKey] = useState<string>(
-    config.defaultSelectedSeriesKey ?? config.series[0]?.key ?? ''
-  );
+  const selectedSeriesKey = useHealthMetricStore((state) => state.selectedSeriesKey);
+  const setSelectedSeriesKey = useHealthMetricStore((state) => state.setSelectedSeriesKey);
+
+  // ------------------------------
+  // 툴팁 상태
+  // ------------------------------
+  const tooltip = useHealthMetricStore((state) => state.tooltip);
+  const setTooltip = useHealthMetricStore((state) => state.setTooltip);
 
   /**
-   * category 변경 시 기본 series를 다시 세팅하고
-   * 기존 tooltip은 닫음
+   * 현재 툴팁이 가리키는 series 설정
+   */
+  const tooltipSeries = useMemo(() => {
+    if (!tooltip) return null;
+
+    return (
+      effectiveConfig.series.find(
+        (series: MetricSeriesConfig) => series.key === tooltip.key
+      ) ?? null
+    );
+  }, [effectiveConfig, tooltip]);
+
+  type SelectedDetailState = {
+    metricValueId?: string;
+    date: string;
+    value?: number;
+    systolic?: number | null;
+    diastolic?: number | null;
+  };
+
+  const [selectedDetail, setSelectedDetail] = useState<SelectedDetailState | null>(null);
+
+
+  /**
+   * config가 바뀌면 선택 series와 tooltip 초기화
    */
   useEffect(() => {
-    setSelectedSeriesKey(config.defaultSelectedSeriesKey ?? config.series[0]?.key ?? '');
+    setSelectedSeriesKey(
+      effectiveConfig.defaultSelectedSeriesKey ?? effectiveConfig.series[0]?.key ?? ''
+    );
     setTooltip(null);
-  }, [config]);
-
+  }, [effectiveConfig, setSelectedSeriesKey, setTooltip]);
   /**
-   * 현재 선택된 series 설정
+   * 현재 선택된 series
    */
   const selectedSeries = useMemo(() => {
-    return config.series.find(series => series.key === selectedSeriesKey) ?? config.series[0];
-  }, [config, selectedSeriesKey]);
+    return (
+      effectiveConfig.series.find(
+        (series: MetricSeriesConfig) => series.key === selectedSeriesKey
+      ) ?? effectiveConfig.series[0]
+    );
+  }, [effectiveConfig, selectedSeriesKey]);
 
   /**
-   * 선택된 series의 정상 범위를 차트 zone 구조로 변환
+   * 선택된 series의 zone을 차트용 구조로 변환
    */
   const chartZones = useMemo(() => {
     return buildChartZones(selectedSeries?.zones);
   }, [selectedSeries]);
 
-  // ------------------------------
-  // 툴팁 상태
-  // ------------------------------
-  const [tooltip, setTooltip] = useState<{
-    key: string;
-    index: number;
-    x: number;
-    y: number;
-    xLabel: string;
-    value: number;
-  } | null>(null);
-
-  /**
-   * 현재 툴팁이 가리키는 series 설정
-   * 라벨 / 색상 / 단위 표시용
-   */
-  const tooltipSeries = useMemo(() => {
-    if (!tooltip) return null;
-    return config.series.find(series => series.key === tooltip.key) ?? null;
-  }, [config, tooltip]);
+  
 
   // ------------------------------
-  // 진단 결과 카드
-  // TODO: 나중에 백엔드 응답으로 교체
-  // 지금은 임시 더미 데이터
+  // 기본 지표용 임시 진단 결과
+  // 커스텀 지표는 사용 안 함
   // ------------------------------
   const resultData = useMemo(() => {
-    switch (category) {
+    switch (builtInCategory) {
       case 'bloodPressure':
         return {
           title: '혈압 진단 결과',
@@ -374,13 +532,52 @@ const HealthMetric: React.FC = () => {
           lines: ['진단 결과 데이터가 아직 준비되지 않았습니다.'],
         };
     }
-  }, [category]);
+  }, [builtInCategory]);
+
+  const openFilterModal = useHealthMetricStore((state) => state.openFilterModal);
+  const syncCustomFilterValue = useHealthMetricStore((state) => state.syncCustomFilterValue);
+
+  const formatDetailDate = (dateText: string) => {
+    if (!dateText) return '';
+
+    const [datePart, dayPartRaw] = dateText.split('/');
+    const dayPart = dayPartRaw ?? '';
+
+    const parts = datePart.split('-');
+    if (parts.length !== 3) return dateText;
+
+    const [year, month, day] = parts;
+    return `${year}.${month}.${day}/${dayPart}`;
+  };
+
+  const handleDeleteMetricValue = async () => {
+    try {
+      const metricValueId = selectedDetail?.metricValueId;
+
+      if (!metricValueId) {
+        console.log('❌ 아직 metricValueId가 없어서 삭제 API를 호출할 수 없습니다.');
+        return;
+      }
+
+      const response = await api.delete(`/health/metrics/values/${metricValueId}`);
+
+      console.log('✅ 수치 삭제 응답:', response.data);
+
+      const limit = recordFilter === 'all' ? 30 : Number(recordFilter);
+      await fetchMetricHistory(limit);
+
+      setSelectedDetail(null);
+    } catch (error: any) {
+      console.error(
+        '❌ 수치 삭제 실패:',
+        error?.response?.data || error
+      );
+    }
+  };
 
   return (
     <View style={styles.root}>
-      {/* ------------------------------
-          헤더
-      ------------------------------ */}
+      {/* 헤더 */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Image source={require('../../assets/icons/back.png')} style={styles.backIcon} />
@@ -393,21 +590,13 @@ const HealthMetric: React.FC = () => {
 
       <View style={styles.headerShadow} />
 
-      {/* ------------------------------
-          최근 기록 보기 필터 영역
-      ------------------------------ */}
+      {/* 최근 기록 보기 필터 */}
       <View style={styles.filterSection}>
         <Text style={styles.filterTitle}>최근 기록 보기</Text>
 
         <View style={styles.filterRow}>
           <View style={styles.filterBox}>
-            <RecentRecordFilter
-              value={recordFilter}
-              onChange={(value) => {
-                setRecordFilter(value);
-                setTooltip(null);
-              }}
-            />
+            <RecentRecordFilter />
           </View>
 
           <TouchableOpacity
@@ -416,8 +605,8 @@ const HealthMetric: React.FC = () => {
               filterModalOpen && styles.filterIconButtonActive,
             ]}
             onPress={() => {
-              setCustomFilterValue(String(recordFilter === 'all' ? 7 : recordFilter));
-              setFilterModalOpen(true);
+              syncCustomFilterValue();
+              openFilterModal();
             }}
           >
             <Image
@@ -430,163 +619,157 @@ const HealthMetric: React.FC = () => {
             />
           </TouchableOpacity>
 
-          <RecordFilterModal
-            visible={filterModalOpen}
-            value={customFilterValue}
-            onChangeValue={setCustomFilterValue}
-            onClose={() => setFilterModalOpen(false)}
-            onConfirm={() => {
-              const n = Number(customFilterValue);
-
-              if (!Number.isNaN(n) && n > 0) {
-                setRecordFilter(n as 7 | 14 | 21 | 'all');
-              }
-
-              setFilterModalOpen(false);
-            }}
-          />
+          <RecordFilterModal/>
         </View>
       </View>
 
-      {/* ------------------------------
-          본문
-      ------------------------------ */}
+      {/* 본문 */}
       <ScrollView
         style={styles.body}
         contentContainerStyle={styles.bodyContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 차트 카드 */}
         <MetricChartCard
-          category={category}
+          category={builtInCategory ?? 'body'}
           onPressInfo={openInfo}
           onPressAdd={() => {
-            // 현재 지표 설정에 맞는 입력 필드만 초기화
             setInputValues(
-              config.inputFields.reduce((acc, field) => {
-                acc[field.key] = '';
-                return acc;
-              }, {} as Record<string, string>)
+              effectiveConfig.inputFields.reduce(
+                (acc: Record<string, string>, field: MetricInputFieldConfig) => {
+                  acc[field.key] = '';
+                  return acc;
+                },
+                {} as Record<string, string>
+              )
             );
             setInputOpen(true);
           }}
           style={styles.cardMargin}
           infoRef={infoRef}
         >
-          <HealthMetricScroller
-            records={displayRecords}
-            pointGap={44}
-            height={360}
-            yAxisWidth={45}
-            renderChart={(_, chartWidth, h) => (
-              <LineMetricChart
-                width={chartWidth}
-                height={h}
-                reverseX
-                yMin={config.yAxis.min}
-                yMax={config.yAxis.max}
-                yTicks={config.yAxis.ticks}
-                zones={chartZones}
-                selectedKey={selectedSeriesKey}
-                selectedPoint={tooltip ? { key: tooltip.key, index: tooltip.index } : null}
-                onSelectSeries={(key) => {
-                  // series가 1개뿐인 지표는 선택 변경 불필요
-                  if (config.series.length <= 1) return;
-                  setSelectedSeriesKey(key);
-                }}
-                onSelectPoint={(point) => {
-                  setTooltip(prev => {
-                    if (prev && prev.index === point.index && prev.key === point.key) {
-                      return null;
-                    }
-                    return point;
-                  });
-                }}
-                series={chartSeries}
-              />
-            )}
-            renderYAxis={(h) => (
-              <ChartYAxis
-                height={h}
-                yMin={config.yAxis.min}
-                yMax={config.yAxis.max}
-                ticks={config.yAxis.ticks}
-              />
-            )}
-          />
+          {isEmptyData ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>아직 기록이 없어요</Text>
+              <Text style={styles.emptySubText}>
+                + 버튼을 눌러 첫 데이터를 추가해보세요
+              </Text>
+            </View>
+          ) : (
+            <HealthMetricScroller
+              records={displayRecords}
+              pointGap={44}
+              height={360}
+              yAxisWidth={45}
+              renderChart={(_, chartWidth, h) => (
+                <LineMetricChart
+                  width={chartWidth}
+                  height={h}
+                  reverseX
+                  yMin={effectiveConfig.yAxis.min}
+                  yMax={effectiveConfig.yAxis.max}
+                  yTicks={effectiveConfig.yAxis.ticks}
+                  zones={chartZones}
+                  selectedKey={selectedSeriesKey}
+                  selectedPoint={tooltip ? { key: tooltip.key, index: tooltip.index } : null}
+                  onSelectSeries={(key) => {
+                    if (effectiveConfig.series.length <= 1) return;
+                    setSelectedSeriesKey(key);
+                  }}
+                  onSelectPoint={(point) => {
+                    const selected = historyData[point.index];
+                    if (!selected) return;
+
+                    setSelectedDetail((prev) => {
+                      const sameDate = prev?.date === selected.date;
+
+                      if (sameDate) {
+                        return null;
+                      }
+
+                      return {
+                        metricValueId: (selected as any).metricValueId,
+                        date: selected.date,
+                        value: selected.value,
+                        systolic: selected.systolic,
+                        diastolic: selected.diastolic,
+                      };
+                    });
+
+                    setTooltip(null);
+                  }}
+                  series={chartSeries}
+                />
+              )}
+              renderYAxis={(h) => (
+                <ChartYAxis
+                  height={h}
+                  yMin={effectiveConfig.yAxis.min}
+                  yMax={effectiveConfig.yAxis.max}
+                  ticks={effectiveConfig.yAxis.ticks}
+                />
+              )}
+            />
+          )}
         </MetricChartCard>
 
-        {/* 진단 결과 카드
-            TODO: 백엔드 응답 연결 예정 */}
-        <ResultCard title={resultData.title} lines={resultData.lines} />
-      </ScrollView>
+        {selectedDetail && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailDate}>
+              {formatDetailDate(selectedDetail.date)}
+            </Text>
 
-      {/* ------------------------------
-          포인트 툴팁
-      ------------------------------ */}
-      {tooltip && (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setTooltip(null)}
-          style={{
-            position: 'absolute',
-            top: tooltip.y + 250,
-            left: tooltip.x,
-            backgroundColor: '#FFFFFF',
-            borderRadius: 14,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderWidth: 1,
-            borderColor: tooltipSeries?.color ?? '#3B82F6',
-            elevation: 6,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
-            {tooltip.xLabel}
-          </Text>
+            {builtInCategory === 'bloodPressure' ? (
+              <>
+                <Text style={styles.detailValue}>
+                  수축기 {selectedDetail.systolic ?? '-'}mmHg
+                </Text>
+                <Text style={styles.detailValue}>
+                  이완기 {selectedDetail.diastolic ?? '-'}mmHg
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.detailValue}>
+                {title} {selectedDetail.value ?? '-'}{effectiveConfig.unit}
+              </Text>
+            )}
 
-          <Text
-            style={{
-              marginTop: 4,
-              fontSize: 16,
-              fontWeight: '700',
-              color: tooltipSeries?.color ?? '#111827',
-            }}
-          >
-            {(tooltipSeries?.label ?? tooltip.key)} {tooltip.value}
-            {tooltipSeries?.unit ?? config.unit ?? ''}
-          </Text>
-        </TouchableOpacity>
-      )}
+            <TouchableOpacity
+              style={[
+                styles.detailTrashButton,
+                !selectedDetail.metricValueId && styles.detailTrashButtonDisabled,
+              ]}
+              onPress={handleDeleteMetricValue}
+              disabled={!selectedDetail.metricValueId}
+            >
+              <Image
+                source={require('../../assets/icons/trash.png')}
+                style={[
+                  styles.detailTrashIcon,
+                  !selectedDetail.metricValueId && styles.detailTrashIconDisabled,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {/* ------------------------------
-          건강 정보 모달
-          config.infoModal 기반
-      ------------------------------ */}
-      <MetricInfoModal
-        visible={infoOpen}
-        onClose={() => setInfoOpen(false)}
-        title={config.infoModal?.title ?? ''}
-        bullets={config.infoModal?.bullets ?? []}
-        note={config.infoModal?.note}
-        anchor={anchor}
-      />
+                {/* 기본 지표만 진단 결과 표시 */}
+                {!isCustom && <ResultCard title={resultData.title} lines={resultData.lines} />}
+              </ScrollView>
 
-      {/* ------------------------------
-          입력 모달
-          config.inputFields 기반
-      ------------------------------ */}
+      {/* 포인트 툴팁 */}
+     
+
+      {/* 입력 모달 */}
       <MetricInputModal
         visible={inputOpen}
         onClose={() => setInputOpen(false)}
         title={title}
-        inputFields={config.inputFields}
+        inputFields={effectiveConfig.inputFields}
         values={inputValues}
+        selectedDate={selectedDate}
+        onChangeDate={setSelectedDate}
         onChangeValue={handleChangeInputValue}
-        onSubmit={() => {
-          console.log('submit', inputValues);
-          setInputOpen(false);
-        }}
+        onSubmit={handleSubmitMetricValue}
       />
     </View>
   );
@@ -677,5 +860,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
     borderColor: '#3B82F6',
   },
+  emptyContainer: {
+    height: 360,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  emptySubText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+  detailCard: {
+    marginTop: 12,
+    marginHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: '#22C55E',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  detailDate: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  detailValue: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#22C55E',
+  },
+  detailTrashButton: {
+    position: 'absolute',
+    right: 14,
+    bottom: 12,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailTrashButtonDisabled: {
+    opacity: 0.4,
+  },
+  detailTrashIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    tintColor: '#9CA3AF',
+  },
+  detailTrashIconDisabled: {
+    tintColor: '#D1D5DB',
+  },
 });
-

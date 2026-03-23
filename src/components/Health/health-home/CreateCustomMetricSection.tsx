@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import api from '../../../api/axios';
 
 export type CustomHealthMetricItem = {
   id: string;
@@ -14,24 +15,47 @@ type Props = {
 const CreateCustomMetricSection: React.FC<Props> = ({ onCreateMetric }) => {
   const [metricName, setMetricName] = useState('');
   const [metricUnit, setMetricUnit] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isDisabled = !metricName.trim() || !metricUnit.trim();
+  const isDisabled =
+    !metricName.trim() || !metricUnit.trim() || isSubmitting;
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (isDisabled) return;
 
-    const newMetric: CustomHealthMetricItem = {
-      id: `custom-${Date.now()}`,
-      name: metricName.trim(),
-      unit: metricUnit.trim(),
-    };
+    try {
+      setIsSubmitting(true);
 
-    onCreateMetric(newMetric);
+      const requestBody = {
+        name: metricName.trim(),
+        unit: metricUnit.trim(),
+      };
 
-    setMetricName('');
-    setMetricUnit('');
+      console.log('✅ 커스텀 건강지표 생성 요청 body:', requestBody);
+
+      const response = await api.post('/health/metrics', requestBody);
+
+      console.log('✅ 커스텀 건강지표 생성 응답:', response.data);
+
+      const newMetric: CustomHealthMetricItem = {
+        id: String(response.data.id),
+        name: response.data.name,
+        unit: response.data.unit,
+      };
+
+      onCreateMetric(newMetric);
+
+      setMetricName('');
+      setMetricUnit('');
+      Alert.alert('완료', '건강지표가 생성되었어요.');
+    } catch (error: any) {
+      console.log('❌ status:', error?.response?.status);
+      console.log('❌ data:', error?.response?.data);
+      console.log('❌ full error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>나만의 건강지표 생성하기</Text>
@@ -48,6 +72,7 @@ const CreateCustomMetricSection: React.FC<Props> = ({ onCreateMetric }) => {
             placeholder=""
             style={styles.input}
             placeholderTextColor="#9CA3AF"
+            editable={!isSubmitting}
           />
         </View>
 
@@ -59,6 +84,7 @@ const CreateCustomMetricSection: React.FC<Props> = ({ onCreateMetric }) => {
             placeholder=""
             style={styles.input}
             placeholderTextColor="#9CA3AF"
+            editable={!isSubmitting}
           />
         </View>
       </View>
@@ -67,8 +93,11 @@ const CreateCustomMetricSection: React.FC<Props> = ({ onCreateMetric }) => {
         activeOpacity={0.8}
         style={[styles.button, isDisabled && styles.buttonDisabled]}
         onPress={handleCreate}
+        disabled={isDisabled}
       >
-        <Text style={styles.buttonText}>생성하기</Text>
+        <Text style={styles.buttonText}>
+          {isSubmitting ? '생성 중...' : '생성하기'}
+        </Text>
       </TouchableOpacity>
     </View>
   );

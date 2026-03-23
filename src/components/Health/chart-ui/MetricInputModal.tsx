@@ -22,6 +22,8 @@ type Props = {
   title: string;
   inputFields: MetricInputFieldConfig[];
   values: Record<string, string>;
+  selectedDate: Date;
+  onChangeDate: (date: Date) => void;
   onChangeValue: (key: string, value: string) => void;
   onSubmit: () => void;
 };
@@ -32,15 +34,16 @@ export default function MetricInputModal({
   title,
   inputFields,
   values,
+  selectedDate,
+  onChangeDate,
   onChangeValue,
   onSubmit,
 }: Props) {
   const slide = useRef(new Animated.Value(0)).current;
 
-  const [date, setDate] = React.useState(new Date());
   const [dateOpen, setDateOpen] = React.useState(false);
 
-  const dateText = `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}.`;
+  const dateText = `${selectedDate.getFullYear()}. ${selectedDate.getMonth() + 1}. ${selectedDate.getDate()}.`;
 
   useEffect(() => {
     if (visible) {
@@ -74,7 +77,6 @@ export default function MetricInputModal({
 
             <Text style={styles.title}>{title}</Text>
 
-            {/* 날짜/시간은 일단 UI만. 다음 단계에서 DatePicker 붙이면 됨 */}
             <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>날짜</Text>
 
@@ -83,16 +85,16 @@ export default function MetricInputModal({
                 </Pressable>
            </View>
            <DatePicker
-                modal
-                open={dateOpen}
-                date={date}
-                mode="date"
-                onConfirm={(d) => {
-                    setDateOpen(false);
-                    setDate(d);
-                }}
-                onCancel={() => setDateOpen(false)}
-                />
+              modal
+              open={dateOpen}
+              date={selectedDate}
+              mode="date"
+              onConfirm={(d) => {
+                setDateOpen(false);
+                onChangeDate(d);
+              }}
+              onCancel={() => setDateOpen(false)}
+            />
            <View style={styles.form}>
             {inputFields.map((field, index) => (
               <View key={field.key} style={styles.inputRow}>

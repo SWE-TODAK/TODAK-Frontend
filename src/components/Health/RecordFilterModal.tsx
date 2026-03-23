@@ -9,22 +9,17 @@ import {
   Image,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { useHealthMetricStore } from '../../store/useHealthMetricStore';
 
-type Props = {
-  visible: boolean;
-  value: string;
-  onChangeValue: (v: string) => void;
-  onClose: () => void;
-  onConfirm: () => void;
-};
+export default function RecordFilterModal() {
+  const visible = useHealthMetricStore((state) => state.filterModalOpen);
+  const value = useHealthMetricStore((state) => state.customFilterValue);
+  const setCustomFilterValue = useHealthMetricStore(
+    (state) => state.setCustomFilterValue
+  );
+  const closeFilterModal = useHealthMetricStore((state) => state.closeFilterModal);
+  const confirmCustomFilter = useHealthMetricStore((state) => state.confirmCustomFilter);
 
-export default function RecordFilterModal({
-  visible,
-  value,
-  onChangeValue,
-  onClose,
-  onConfirm,
-}: Props) {
   const [initialValue, setInitialValue] = useState(value);
 
   useEffect(() => {
@@ -32,53 +27,57 @@ export default function RecordFilterModal({
       setInitialValue(value);
     }
   }, [visible]);
-
+  
   const isChanged = useMemo(() => {
     return value !== initialValue;
   }, [value, initialValue]);
 
   const handleSliderChange = (v: number) => {
-    onChangeValue(String(v));
+    setCustomFilterValue(String(v));
   };
 
   const handleInputChange = (text: string) => {
     const onlyNumber = text.replace(/[^0-9]/g, '');
 
     if (onlyNumber === '') {
-      onChangeValue('');
+      setCustomFilterValue('');
       return;
     }
 
     const num = Number(onlyNumber);
 
     if (num < 1) {
-      onChangeValue('1');
+      setCustomFilterValue('1');
       return;
     }
 
     if (num > 60) {
-      onChangeValue('60');
+      setCustomFilterValue('60');
       return;
     }
 
-    onChangeValue(String(num));
+    setCustomFilterValue(String(num));
   };
 
   const handleConfirm = () => {
-    if (!isChanged) return;
-    onConfirm();
+    confirmCustomFilter();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={closeFilterModal}
+    >
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeFilterModal} />
 
         <View style={styles.sheet}>
           <View style={styles.handle} />
 
           <View style={styles.topRow}>
-            <Pressable onPress={onClose} hitSlop={8} style={styles.iconButton}>
+            <Pressable onPress={closeFilterModal} hitSlop={8} style={styles.iconButton}>
               <Image
                 source={require('../../assets/icons/Clear.png')}
                 style={styles.sideIcon}

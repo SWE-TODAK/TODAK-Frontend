@@ -21,8 +21,8 @@ export type BackendAuthResponse = {
   refreshToken?: string;
   token?: {
     tokenType?: string;
-    accessToken: string;
-    refreshToken: string;
+  accessToken: string;
+  refreshToken: string;
     expiresInSeconds?: number;
     rotated?: boolean;
   };

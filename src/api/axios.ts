@@ -27,12 +27,9 @@ const instance = axios.create({
 instance.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
 
-  console.log('🟡 [API 요청] url:', config.url);
-  console.log('🟡 [API 요청] token:', token);
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('🟢 Authorization 붙음:', config.headers.Authorization);
+
   } else {
     console.log('🔴 토큰 없음');
   }
