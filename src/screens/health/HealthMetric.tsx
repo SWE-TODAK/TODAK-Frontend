@@ -215,11 +215,10 @@ const HealthMetric: React.FC = () => {
 
     const [historyData, setHistoryData] = useState<MetricHistoryItem[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [summaryMessage, setSummaryMessage] = useState('');
 
     const fetchMetricHistory = async (limit: number) => {
       try {
-
-
         if (!metricId) {
           console.log('❌ 추이 조회용 metricId가 없습니다.');
           return;
@@ -227,27 +226,28 @@ const HealthMetric: React.FC = () => {
 
         setHistoryLoading(true);
 
-      
-
         const response = await api.get(`/health/metrics/${metricId}/query`, {
           params: { limit },
         });
 
-        //console.log('✅ 건강 수치 추이 조회 응답:', response.data);
+        console.log('🟢 summaryMessage:', response.data?.data?.summaryMessage);
 
         const history: MetricHistoryItem[] = response.data?.data?.history ?? [];
+        const summary: string = response.data?.data?.summaryMessage ?? '';
 
         setHistoryData(history);
+        setSummaryMessage(summary);
       } catch (error: any) {
         console.error(
           '❌ 건강 수치 추이 조회 실패:',
           error?.response?.data || error
         );
+        setHistoryData([]);
+        setSummaryMessage('');
       } finally {
         setHistoryLoading(false);
       }
     };
-
     
     
 
@@ -668,34 +668,25 @@ const HealthMetric: React.FC = () => {
   // 커스텀 지표는 사용 안 함
   // ------------------------------
   const resultData = useMemo(() => {
-    switch (builtInCategory) {
-      case 'bloodPressure':
-        return {
-          title: '혈압 진단 결과',
-          lines: [
-            '최근 3회 측정 모두 정상 범위입니다.',
-            '수축기 평균 121mmHg, 이완기 평균 79mmHg로 안정적인 상태예요.',
-            '지금처럼 규칙적인 식습관과 가벼운 운동을 유지하세요 💚',
-          ],
-        };
+  if (historyLoading) {
+    return {
+      title: '진단 결과',
+      lines: ['분석 중입니다...'],
+    };
+  }
 
-      case 'bloodSugar':
-        return {
-          title: '혈당 진단 결과',
-          lines: [
-            '최근 기록 기준으로 혈당 흐름이 비교적 안정적입니다.',
-            '식사 여부와 측정 시점에 따라 수치 해석이 달라질 수 있어요.',
-            '정확한 진단 결과는 백엔드 응답으로 연결될 예정입니다.',
-          ],
-        };
+  if (!summaryMessage) {
+    return {
+      title: '진단 결과',
+      lines: ['진단 결과가 아직 없습니다.'],
+    };
+  }
 
-      default:
-        return {
-          title: '진단 결과',
-          lines: ['진단 결과 데이터가 아직 준비되지 않았습니다.'],
-        };
-    }
-  }, [builtInCategory]);
+  return {
+    title: '진단 결과',
+    lines: [summaryMessage],
+  };
+}, [summaryMessage, historyLoading]);
 
   const openFilterModal = useHealthMetricStore((state) => state.openFilterModal);
   const syncCustomFilterValue = useHealthMetricStore((state) => state.syncCustomFilterValue);
