@@ -26,8 +26,8 @@ export default function RecordFilterModal() {
     if (visible) {
       setInitialValue(value);
     }
-  }, [visible, value]);
-
+  }, [visible]);
+  
   const isChanged = useMemo(() => {
     return value !== initialValue;
   }, [value, initialValue]);
@@ -60,7 +60,6 @@ export default function RecordFilterModal() {
   };
 
   const handleConfirm = () => {
-    if (!isChanged) return;
     confirmCustomFilter();
   };
 

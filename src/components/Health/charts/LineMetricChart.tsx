@@ -91,8 +91,8 @@ export default function LineMetricChart({
   onSelectSeries,
   onSelectPoint,
 }: Props) {
-  const paddingLeft = 10;
-  const paddingRight = 10;
+  const paddingLeft = 14;
+  const paddingRight = 14;
   const paddingTop = 14;
   const paddingBottom = 26;
 
