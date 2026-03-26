@@ -38,11 +38,15 @@ export default function WithdrawModal({
 
             {provider === 'KAKAO' ? (
               <Text style={styles.desc}>
-                정말 탈퇴하시겠습니까?{'\n'}회원탈퇴 시 카카오 계정 연결도 함께 해제됩니다.
+                <Text style={styles.boldText}>정말 탈퇴하시겠습니까?</Text>{'\n'}
+                탈퇴 시 계정은 비활성화되며, {'\n'}동일 계정으로 재가입 시 복구됩니다.{'\n'}
+                (카카오 계정 연결은 해제됩니다.)
               </Text>
             ) : (
               <>
                 <Text style={styles.desc}>
+                  <Text style={styles.boldText}>정말 탈퇴하시겠습니까?</Text>{'\n'}
+                  탈퇴 시 계정은 비활성화되며, {'\n'}동일 이메일로 재가입 시 복구됩니다.{'\n'}
                   회원탈퇴를 위해 비밀번호를 다시 입력해주세요.
                 </Text>
                 <TextInput
@@ -96,7 +100,6 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 320,
-    // 입력창이 들어갈 수 있도록 유연한 높이 설정 (ConfirmModal 기본 디자인 유지)
     minHeight: 180,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -111,7 +114,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
     paddingHorizontal: 20,
-    // 하단 버튼 영역과 겹치지 않게 여백 확보
     paddingBottom: 60,
   },
   title: {
@@ -126,7 +128,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     lineHeight: 18,
-    marginBottom: 16, // 입력창과의 간격
+    marginBottom: 16,
+  },
+
+  boldText: {
+    fontWeight: '600',
+    color: '#6B7280',
   },
   input: {
     width: '100%',
