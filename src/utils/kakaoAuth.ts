@@ -3,7 +3,7 @@ import { Linking } from 'react-native';
 import { saveAccessToken, saveRefreshToken, saveUser } from './authStorage';
 
 // ✅ 백엔드 base url
-const BACKEND_BASE_URL = 'http://3.34.197.137:8080';
+const BACKEND_BASE_URL = 'http://54.116.64.125:8080';
 
 // ✅ 백엔드의 카카오 로그인 시작 URL
 const KAKAO_START_PATH = '/oauth2/authorization/kakao';
