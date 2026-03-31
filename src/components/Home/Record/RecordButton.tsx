@@ -72,30 +72,8 @@ const RecordButton = forwardRef<RecordButtonHandle, Props>(
     }, [isRecording, onRecordingChange]);
 
     useEffect(() => {
-      if (!isRecording) {
-        scale.stopAnimation();
-        scale.setValue(1);
-        return;
-      }
-
-
-      const loop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.05,
-            duration: 450,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 450,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-
-      loop.start();
-      return () => loop.stop();
+      scale.stopAnimation();
+      scale.setValue(1);
     }, [isRecording, scale]);
 
     const startTimeRef = useRef<number | null>(null);
@@ -190,18 +168,15 @@ const RecordButton = forwardRef<RecordButtonHandle, Props>(
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={async () => {
-          // 1) 동의 모달/로직은 무조건 실행
           onTap?.();
 
-          // 2) 동의 안 했으면 여기서 끝 (녹음 토글 X)
           if (disabled) return;
 
-          // 3) 동의 했으면 녹음 토글
           await toggle();
         }}
       >
         <Animated.View style={[styles.outerCircle, { transform: [{ scale }] }]}>
-          <View style={styles.innerCircle} />
+          <View style={isRecording ? styles.innerStopSquare : styles.innerCircle} />
         </Animated.View>
       </TouchableOpacity>
     );
@@ -226,10 +201,19 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
+   // 녹음 전: 빨간 원
   innerCircle: {
     width: 75,
     height: 75,
     borderRadius: 40,
+    backgroundColor: '#FF1E1E',
+  },
+
+  // 녹음 중: 빨간 둥근 사각형
+  innerStopSquare: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
     backgroundColor: '#FF1E1E',
   },
 });
