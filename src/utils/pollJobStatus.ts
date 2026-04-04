@@ -3,7 +3,7 @@ import { getJobStatus, JobStatusResponse } from '../api/recordingApi';
 const pollJobUntilDone= async (
   jobId: string,
   intervalMs: number = 2000,
-  timeoutMs: number = 60000,
+  timeoutMs: number = 180000,
 ): Promise<JobStatusResponse> => {
   const startTime = Date.now();
 

@@ -22,11 +22,12 @@ type Props = {
 
   // 완료 버튼 눌렀을 때 부모에게 전달
   onSubmit: (payload: {
-    hospital: string;
-    disease?: string;
-    doctor?: string;
-    department?: string;
+    hospitalName: string;
+    diseaseName?: string;
+    doctorName?: string;
+    departmentName?: string;
     title?: string;
+    consultedAt?: string;
   }) => void;
 };
 
@@ -117,11 +118,12 @@ const CompleteModal: React.FC<Props> = ({
     if (!canSubmit) return;
 
     onSubmit({
-      hospital: hospital.trim(),
-      disease: disease.trim() || undefined,
-      doctor: doctor.trim() || undefined,
-      department: department.trim() || undefined,
+      hospitalName: hospital.trim(),
+      diseaseName: disease.trim() || undefined,
+      doctorName: doctor.trim() || undefined,
+      departmentName: department.trim() || undefined,
       title: title?.trim() || undefined,
+      consultedAt: new Date().toISOString(),
     });
   };
 

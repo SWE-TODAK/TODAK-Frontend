@@ -59,3 +59,41 @@ export const getJobStatus = async (
   const res = await api.get(`/jobs/${jobId}`);
   return res.data;
 };
+
+export type SaveRecordingMetadataRequest = {
+  hospitalName: string;
+  diseaseName?: string;
+  doctorName?: string;
+  departmentName?: string;
+  consultedAt?: string;
+  title?: string;
+};
+
+export type SaveRecordingMetadataResponse = {
+  recordingId: string;
+  title: string;
+  memo: string | null;
+  createdAt: string;
+  status: string;
+  hospitalName: string | null;
+  diseaseName: string | null;
+  doctorName: string | null;
+  departmentName: string | null;
+  consultedAt: string | null;
+};
+
+export const saveRecordingMetadata = async (
+  recordingId: string,
+  body: SaveRecordingMetadataRequest,
+) => {
+  console.log('📤 [metadata 요청]', {
+    url: `/recordings/${recordingId}/metadata`,
+    body,
+  });
+
+  const res = await api.patch(`/recordings/${recordingId}/metadata`, body);
+
+  console.log('📥 [metadata 응답]', res.data);
+
+  return res.data;
+};

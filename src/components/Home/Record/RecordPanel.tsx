@@ -8,6 +8,7 @@ import {
   startRecordingUpload,
   notifyRecordingUploaded,
   startRecordingStt,
+  saveRecordingMetadata,
 } from '../../../api/recordingApi';
 import uploadToS3 from '../../../utils/uploadToS3.ts';
 import pollJobUntilDone from '../../../utils/pollJobStatus.ts';
@@ -77,7 +78,14 @@ const RecordPanel: React.FC = () => {
   };
 
   // ✅ 완료 모달에서 완료 눌렀을 때
-  const handleSubmitComplete = async (payload: { hospital: string }) => {
+  const handleSubmitComplete = async (payload: {
+    hospitalName: string;
+    diseaseName?: string;
+    doctorName?: string;
+    departmentName?: string;
+    title?: string;
+    consultedAt?: string;
+  }) => {
     if (!audioPath) {
       console.log('녹음 파일 경로가 없습니다.');
       return;
@@ -120,7 +128,22 @@ const RecordPanel: React.FC = () => {
 
       console.log('3. uploaded notify success');
 
-      // 4. STT 시작
+
+      // 4. 메타데이터 저장
+      setProcessMessage('진료 정보를 저장 중입니다.');
+
+      const metadataResult = await saveRecordingMetadata(recordingId, {
+        hospitalName: payload.hospitalName,
+        diseaseName: payload.diseaseName,
+        doctorName: payload.doctorName,
+        departmentName: payload.departmentName,
+        consultedAt: payload.consultedAt,
+        title: payload.title,
+      });
+
+      console.log('4. metadata save success:', metadataResult);
+
+      // 5. STT 시작
       setProcessMessage('텍스트 변환 요청 중입니다.');
 
       const sttResult = await startRecordingStt(recordingId);
