@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MycareRecordSection from '../components/Mycare/MycareRecordSection';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
 import Toast from '../components/common/Toast';
+import { getMyRecordingList } from '../api/recordingApi';
 
 type MycareRecord = {
   id: string;
@@ -33,13 +34,15 @@ type MycareRecord = {
 
 const FILTERS = ['전체', '병원명', '진료과', '의사명', '병명'] as const;
 type FilterKey = (typeof FILTERS)[number];
+type MycareRouteProp = RouteProp<MycareStackParamList, 'MycareMain'>;
 
 const PERIODS = ['최근 1개월', '최근 3개월', '최근 6개월', '최근 1년', '전체'] as const;
 type PeriodKey = (typeof PERIODS)[number];
 
 const Mycare: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<MycareStackParamList>>();
+  const navigation =
+  useNavigation<NativeStackNavigationProp<MycareStackParamList, 'MycareMain'>>();
 
   const [search, setSearch] = useState('');
   const [filterKey, setFilterKey] = useState<FilterKey>('전체');
@@ -57,38 +60,8 @@ const Mycare: React.FC = () => {
   };
 
   // 더미 데이터
-  const [records, setRecords] = useState<MycareRecord[]>([
-    {
-      id: '1',
-      dateLabel: '2025.05.27.금',
-      clinicName: '밝은 눈 안과',
-      timeLabel: '10:00 AM',
-      deptName: '안과',
-      doctorName: '최홍서',
-      diseaseName: '',
-      summary: '시력검사 결과 큰 변화는 없으며, 현재 상태는 안정적인 편입니다. 다만 예방 차원에서 정기적인 검진만 권장됩니다.',
-      fullText: '검사 결과를 종합해 보면 ... (전체 텍스트 더미)\n\n향후에도 정기 검진 권장...',
-      memo: '다음 검진: 6개월 뒤\n인공눈물 챙기기',
-      hasAudio: true,
-    },
-    {
-      id: '2',
-      dateLabel: '2025.04.23.수',
-      clinicName: '참 좋은병원',
-      timeLabel: '2:00 PM',
-      deptName: '내과',
-      doctorName: '',
-      diseaseName: '',
-      summary:
-        '현재까지 검사상 유의미한 변화는 관찰되지 않으며, 전반적인 상태는 안정적입니다. 향후 상태 유지를 위해 정기적인 내과적 검진을 권장드립니다.',
-      fullText:
-        '검사 결과를 종합해 보면, 현재까지 이전과 비교하여 의미 있는 변화는 보이지 않으며 ...\n\n평소와 다른 증상이 새로 나타나거나 불편감이 있을 경우...',
-      memo: '이번 진료: 이상 없음\n예방 차원 정기 검진 권장',
-      hasAudio: false,
-    },
-  ]);
-
-  const goDetail = (record: any) => {
+  const [records, setRecords] = useState<MycareRecord[]>([]);
+  const goDetail = (record: MycareRecord) => {
     navigation.navigate('MycareDetail', {
       recordId: record.id,
       records,
@@ -134,7 +107,24 @@ const Mycare: React.FC = () => {
       // TODO: 여기서 기간에 맞춰 records API 호출/필터링 붙이면 됨
   };
 
-  const route = useRoute<any>();
+  const route = useRoute<MycareRouteProp>();
+
+  useEffect(() => {
+  const fetchMyRecords = async () => {
+    try {
+      const data = await getMyRecordingList();
+      console.log('🔥 Mycare 최종 records:', data);
+      setRecords(data);
+    } catch (error: any) {
+      console.error('❌ 내 진료 목록 조회 실패:', error);
+      console.error('❌ status:', error?.response?.status);
+      console.error('❌ data:', error?.response?.data);
+      setRecords([]);
+    }
+  };
+
+  fetchMyRecords();
+}, []);
 
   useEffect(() => {
     const deletedRecordId = route.params?.deletedRecordId;
@@ -151,7 +141,7 @@ const Mycare: React.FC = () => {
       navigation.setParams({
         deletedRecordId: undefined,
         toastMessage: undefined,
-      } as any);
+      });
     }
   }, [route.params, navigation]);
 

@@ -97,3 +97,81 @@ export const saveRecordingMetadata = async (
 
   return res.data;
 };
+
+type RecentRecordingApiItem = {
+  recordingId: string;
+  date: string;
+  intro: string;
+  title: string | null;
+};
+
+type RecentRecordingApiResponse = {
+  status: number;
+  message: string;
+  data: RecentRecordingApiItem[];
+};
+
+export const getRecentRecordings = async () => {
+  const response = await api.get<RecentRecordingApiResponse>('/recordings/recent');
+
+  return response.data.data.map(item => ({
+    id: item.recordingId,
+    date: item.date,
+    title: item.title,
+    description: item.intro,
+  }));
+};
+
+type MyRecordingListItem = {
+  recordingId: string;
+  date: string;
+  hospitalName: string;
+  visitTime: string;
+  department: string;
+  doctorName: string;
+  summary: string;
+};
+
+type MyRecordingListResponse = {
+  status: number;
+  message: string;
+  data: MyRecordingListItem[];
+};
+
+export type MycareRecord = {
+  id: string;
+  dateLabel: string;
+  clinicName: string;
+  timeLabel: string;
+  deptName: string;
+  doctorName: string;
+  diseaseName: string;
+  summary: string;
+  fullText: string;
+  memo: string;
+  hasAudio: boolean;
+};
+
+export const getMyRecordingList = async (): Promise<MycareRecord[]> => {
+  const response = await api.get<MyRecordingListResponse>('/recordings/list/my');
+
+  console.log('📥 내 진료 목록 원본 응답:', response.data);
+
+  const mapped = response.data.data.map(item => ({
+    id: item.recordingId,
+    dateLabel: item.date,
+    clinicName: item.hospitalName ?? '',
+    timeLabel: item.visitTime ?? '',
+    deptName: item.department ?? '',
+    doctorName: item.doctorName ?? '',
+    diseaseName: '',
+    summary: item.summary ?? '',
+    fullText: '',
+    memo: '',
+    hasAudio: false,
+  }));
+
+  console.log('📦 내 진료 목록 변환 데이터:', mapped);
+
+  return mapped;
+};

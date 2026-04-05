@@ -1,4 +1,3 @@
-// components/Home/recentRecords/RecentRecordsSection.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import RecentRecordsCard from './RecentRecordsCard';
@@ -6,6 +5,7 @@ import RecentRecordsCard from './RecentRecordsCard';
 type RecordItem = {
   id: string;
   date: string;
+  title?: string | null;
   description: string;
 };
 
@@ -47,15 +47,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    marginLeft:10,
+    marginLeft: 10,
     fontWeight: '800',
     marginBottom: 10,
     color: '#111',
   },
-
-  // ✅ empty 상태에서도 섹션이 "길게" 보이도록
   emptyCard: {
-    minHeight: 400,            // ✅ 원하는 느낌으로 260~340 사이 조절
+    minHeight: 400,
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
     paddingVertical: 44,

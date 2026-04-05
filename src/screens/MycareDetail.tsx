@@ -1,5 +1,5 @@
 // src/screens/MycareDetail.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,7 +17,7 @@ export default function MycareDetail({ navigation, route }: Props) {
   // "최근 진료가 오른쪽"이 되려면 내림차순(최신 먼저) 정렬이 자연스러움
   // 지금은 dateLabel이 "2025.04.23.수" 형태라 앞 10자리만 비교하면 됨
   const sortedRecords = useMemo(() => {
-    const toKey = (dl: string) => dl.slice(0, 10).replace(/\./g, ''); // "20250423"
+  const toKey = (dl: string) => (dl || '').slice(0, 10).replace(/\./g, '');
     return [...records].sort((a, b) => toKey(b.dateLabel).localeCompare(toKey(a.dateLabel)));
   }, [records]);
 
@@ -27,6 +27,35 @@ export default function MycareDetail({ navigation, route }: Props) {
   );
 
   const record = sortedRecords[currentIndex];
+
+  if (!record) {
+    return (
+      <View style={styles.root}>
+        <View style={{ height: insets.top, backgroundColor: '#FFFFFF' }} />
+
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+            style={styles.backCircle}
+          >
+            <Image
+              source={require('../assets/icons/back.png')}
+              style={styles.backImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+
+          <Text style={styles.title}>진료 상세보기</Text>
+          <View style={{ width: 44 }} />
+        </View>
+
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text>진료 기록을 찾을 수 없습니다.</Text>
+        </View>
+      </View>
+    );
+  }
   const hasPrev = currentIndex < sortedRecords.length - 1; // 더 과거(왼쪽)
   const hasNext = currentIndex > 0; // 더 최근(오른쪽)
 
@@ -47,7 +76,12 @@ export default function MycareDetail({ navigation, route }: Props) {
   const [memo, setMemo] = useState(record.memo ?? '');
   const [editingMemo, setEditingMemo] = useState(false);
 
-  const fullText = record.fullText ?? record.summary;
+  useEffect(() => {
+    setMemo(record.memo ?? '');
+    setEditingMemo(false);
+  }, [record.id, record.memo]);
+
+  const fullText = record.fullText || record.summary;
 
   return (
     <View style={styles.root}>
@@ -206,7 +240,7 @@ export default function MycareDetail({ navigation, route }: Props) {
           setDeleteModalVisible(false);
 
           // Mycare 화면으로 이동 + 삭제 완료 토스트 신호 전달
-          navigation.navigate('Mycare', {
+          navigation.navigate('MycareMain', {
             deletedRecordId: record.id,
             toastMessage: '삭제됐어요',
           } as any);
