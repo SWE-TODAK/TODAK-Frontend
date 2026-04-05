@@ -16,7 +16,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Image,
-  Switch,
   Modal,
   Pressable,
   ActivityIndicator,
@@ -35,10 +34,6 @@ export default function ProfileSetting({ navigation }: Props) {
 
   // 유저 로그인 제공자 (LOCAL or KAKAO)
   const [loginProvider, setLoginProvider] = useState<'LOCAL' | 'KAKAO'>('LOCAL');
-
-  const [kakaoEasyLogin, setKakaoEasyLogin] = useState(false);
-  const [kakaoModalVisible, setKakaoModalVisible] = useState(false);
-  const [pendingKakaoEasyLogin, setPendingKakaoEasyLogin] = useState<boolean | null>(null);
 
   const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
@@ -82,7 +77,6 @@ export default function ProfileSetting({ navigation }: Props) {
         setSexDraft(genderVal === 'MALE' ? 'M' : 'F');
 
         setProfileImageUri(data.profileImageUrl || null);
-        setKakaoEasyLogin(data.kakaoLinked || false);
 
         if (data.hasPassword === false) {
           setLoginProvider('KAKAO');
@@ -211,37 +205,6 @@ export default function ProfileSetting({ navigation }: Props) {
     }
   };
 
-  const onToggleKakaoEasyLogin = (next: boolean) => {
-    if (editing === 'nickname') commitNickname();
-    if (editing === 'email') commitEmail();
-    setPendingKakaoEasyLogin(next);
-    setKakaoModalVisible(true);
-  };
-
-  const confirmKakaoEasyLogin = async () => {
-    if (pendingKakaoEasyLogin === null) return;
-    const next = pendingKakaoEasyLogin;
-    setKakaoModalVisible(false);
-    setPendingKakaoEasyLogin(null);
-
-    try {
-      if (next) {
-        await instance.post('/auth/kakao/link');
-      } else {
-        await instance.post('/auth/kakao/unlink');
-      }
-      setKakaoEasyLogin(next);
-      showToast(next ? '카카오 간편 로그인이 연결됐어요' : '카카오 간편 로그인이 해제됐어요');
-    } catch (e) {
-      showToast('처리 중 오류가 발생했어요');
-    }
-  };
-
-  const cancelKakaoEasyLogin = () => {
-    setKakaoModalVisible(false);
-    setPendingKakaoEasyLogin(null);
-  };
-
   const handleLogout = async () => {
     setLogoutVisible(false);
     try {
@@ -360,18 +323,6 @@ export default function ProfileSetting({ navigation }: Props) {
           <InfoRow label="생년월일" value={birthLabel} onPressEdit={onEditBirth} />
           <InfoRow label="성별" value={sexLabel} onPressEdit={onEditSex} />
 
-          <View style={[styles.row, { marginTop: 6 }]}>
-            <Text style={styles.rowLabel}>카카오 간편 로그인</Text>
-            <View style={styles.rowRight}>
-              <Switch
-                value={kakaoEasyLogin}
-                onValueChange={onToggleKakaoEasyLogin}
-                trackColor={{ false: '#E5E7EB', true: '#34C759' }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-          </View>
-
           <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => setConsentVisible(true)}>
             <Text style={styles.menuText}>비밀번호 변경</Text>
             <Image source={require('../../assets/icons/arrow-right.png')} style={styles.chevron} resizeMode="contain" />
@@ -428,21 +379,6 @@ export default function ProfileSetting({ navigation }: Props) {
             skipSuccess: true,
           } as any);
         }}
-      />
-
-      <ConfirmModal
-        visible={kakaoModalVisible}
-        title={pendingKakaoEasyLogin ? '카카오 간편 로그인 연결' : '카카오 간편 로그인 해제'}
-        message={
-          pendingKakaoEasyLogin
-            ? '카카오 계정을 연결하여\n간편 로그인을 사용하시겠습니까?'
-            : '카카오 간편 로그인을 해제하시겠습니까?'
-        }
-        cancelText="취소"
-        confirmText="확인"
-        confirmColor={pendingKakaoEasyLogin ? undefined : '#EF4444'}
-        onCancel={cancelKakaoEasyLogin}
-        onConfirm={confirmKakaoEasyLogin}
       />
 
       <ConfirmModal
