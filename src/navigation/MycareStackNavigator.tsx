@@ -22,11 +22,16 @@ export type MycareRecordParam = {
 };
 
 export type MycareStackParamList = {
-  MycareMain: undefined;
+  MycareMain: {
+    deletedRecordId?: string;
+    toastMessage?: string;
+  } | undefined;
+
   MycareDetail: {
     recordId: string;
     records: any[];
   };
+
   MycareAudio: {
     recordId: string;
     records: any[];
