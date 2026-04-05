@@ -97,3 +97,27 @@ export const saveRecordingMetadata = async (
 
   return res.data;
 };
+
+type RecentRecordingApiItem = {
+  recordingId: string;
+  date: string;
+  intro: string;
+  title: string | null;
+};
+
+type RecentRecordingApiResponse = {
+  status: number;
+  message: string;
+  data: RecentRecordingApiItem[];
+};
+
+export const getRecentRecordings = async () => {
+  const response = await api.get<RecentRecordingApiResponse>('/recordings/recent');
+
+  return response.data.data.map(item => ({
+    id: item.recordingId,
+    date: item.date,
+    title: item.title,
+    description: item.intro,
+  }));
+};

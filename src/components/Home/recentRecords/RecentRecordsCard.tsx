@@ -1,15 +1,12 @@
-// components/Home/recentRecords/RecentRecordsCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 type RecordItem = {
   id: string;
-  dateLabel?: string;
-  date?: string;
-  summary?: string;
-  description?: string;
-  [key: string]: any;
+  date: string;
+  title?: string | null;
+  description: string;
 };
 
 type Props = {
@@ -20,7 +17,6 @@ const MAX_RECORDS_IN_CARD = 4;
 
 const RecentRecordsCard: React.FC<Props> = ({ records }) => {
   const navigation = useNavigation<any>();
-
   const visible = records.slice(0, MAX_RECORDS_IN_CARD);
 
   return (
@@ -38,15 +34,21 @@ const RecentRecordsCard: React.FC<Props> = ({ records }) => {
                   screen: 'MycareDetail',
                   params: {
                     recordId: item.id,
-                    records: records,
                   },
                 });
               }}
             >
               <View style={styles.textArea}>
-                <Text style={styles.date}>{item.dateLabel || item.date}</Text>
+                <Text style={styles.date}>{item.date}</Text>
+
+                {!!item.title && (
+                  <Text style={styles.recordTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                )}
+
                 <Text style={styles.desc} numberOfLines={2}>
-                  {item.summary || item.description}
+                  {item.description}
                 </Text>
               </View>
 
@@ -82,7 +84,6 @@ const RecentRecordsCard: React.FC<Props> = ({ records }) => {
 
 export default RecentRecordsCard;
 
-// ... (이하 StyleSheet 부분은 기존과 동일하므로 생략하지 않고 그대로 두시면 됩니다.)
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
@@ -107,6 +108,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 6,
     color: '#111',
+  },
+  recordTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 4,
   },
   desc: {
     fontSize: 15,
