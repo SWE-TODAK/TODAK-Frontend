@@ -16,6 +16,7 @@ import pollJobUntilDone from '../../../utils/pollJobStatus.ts';
 // ✅ 네가 만든 모달 경로에 맞게 수정
 import ConsentModal from './modals/ConsentModal';
 import CompleteModal from './modals/CompleteModal';
+import Toast from '../../common/Toast';
 
 const RecordPanel: React.FC = () => {
   const recordRef = useRef<RecordButtonHandle>(null);
@@ -34,6 +35,9 @@ const RecordPanel: React.FC = () => {
   // ✅ “이번 녹음에 대해 동의 받았는지” 플래그
   const [hasConsent, setHasConsent] = useState(false);
 
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   // ✅ 버튼 눌렀을 때 (부모가 먼저 판단)
   const handleTapRecord = () => {
     // 녹음 중이면(=stop 하는 상황) 동의 모달 띄우면 안 됨
@@ -44,6 +48,8 @@ const RecordPanel: React.FC = () => {
       setShowConsent(true);
     }
   };
+
+  
 
   // ✅ 동의 모달에서 “동의” 눌렀을 때
   const handleAgreeConsent = async () => {
@@ -143,6 +149,8 @@ const RecordPanel: React.FC = () => {
 
       console.log('4. metadata save success:', metadataResult);
 
+      const recordingTitle = metadataResult.title || payload.title || '녹음';
+
       // 5. STT 시작
       setProcessMessage('텍스트 변환 요청 중입니다.');
 
@@ -161,6 +169,12 @@ const RecordPanel: React.FC = () => {
       console.log('5. polling success:', finalJobResult);
 
       setProcessMessage('텍스트 변환이 완료되었습니다.');
+      setToastMessage(`${recordingTitle}의 녹음본 변환이 완료되었습니다.`);
+      setToastVisible(true);
+
+      setTimeout(() => {
+        setToastVisible(false);
+      }, 1500);
 
       // 다음 녹음을 위해 초기화
       setHasConsent(false);
@@ -210,6 +224,8 @@ const RecordPanel: React.FC = () => {
         durationText={recordInfo.durationText}
         onSubmit={handleSubmitComplete}
       />
+
+      <Toast visible={toastVisible} message={toastMessage} />
     </View>
   );
 };
