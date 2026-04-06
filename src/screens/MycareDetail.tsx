@@ -7,6 +7,7 @@ import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
 import MycareDetailTopCard from '../components/Mycare/MycareDetailTopCard';
 import MycareDetailBlock from '../components/Mycare/MycareDetailBlock';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { getRecordingDetail } from '../api/recordingApi';
 
 type Props = NativeStackScreenProps<MycareStackParamList, 'MycareDetail'>;
 
@@ -73,15 +74,74 @@ export default function MycareDetail({ navigation, route }: Props) {
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
-  const [memo, setMemo] = useState(record.memo ?? '');
+  const [memo, setMemo] = useState('');
+  
   const [editingMemo, setEditingMemo] = useState(false);
 
-  useEffect(() => {
-    setMemo(record.memo ?? '');
-    setEditingMemo(false);
-  }, [record.id, record.memo]);
+  const [detail, setDetail] = useState<null | {
+    id: string;
+    dateLabel: string;
+    clinicName: string;
+    timeLabel: string;
+    deptName: string;
+    doctorName: string;
+    diseaseName: string;
+    summary: string;
+    fullText: string;
+    memo: string;
+    hasAudio: boolean;
+    audioUrl?: string | null;
+  }>(null);
 
-  const fullText = record.fullText || record.summary;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        setLoading(true);
+        setDetail(null);
+        const data = await getRecordingDetail(recordId);
+        setDetail(data);
+      } catch (error: any) {
+        console.error('❌ 녹음 상세 조회 실패:', error);
+        console.error('❌ status:', error?.response?.status);
+        console.error('❌ data:', error?.response?.data);
+        setDetail(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [recordId]);
+  
+  const fullText = detail?.fullText || detail?.summary || record.fullText || record.summary;
+
+  useEffect(() => {
+    setMemo(detail?.memo ?? '');
+    setEditingMemo(false);
+  }, [detail?.id, detail?.memo]);
+
+  
+
+  if (loading && !detail) {
+    return (
+      <View style={styles.root}>
+        <View style={{ height: insets.top, backgroundColor: '#FFFFFF' }} />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={styles.backCircle}>
+            <Image source={require('../assets/icons/back.png')} style={styles.backImage} resizeMode="contain" />
+          </TouchableOpacity>
+          <Text style={styles.title}>진료 상세보기</Text>
+          <View style={{ width: 44 }} />
+        </View>
+
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text>상세 정보를 불러오는 중입니다...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -117,8 +177,8 @@ export default function MycareDetail({ navigation, route }: Props) {
               />
             </Pressable>
 
-            <Text style={styles.dateText}>{record.dateLabel}</Text>
-
+            <Text style={styles.dateText}>{detail?.dateLabel ?? record.dateLabel}</Text>
+            
             <Pressable
               onPress={goNext}
               disabled={!hasNext}
@@ -151,11 +211,11 @@ export default function MycareDetail({ navigation, route }: Props) {
 
         {/* 고정: TopCard */}
         <MycareDetailTopCard
-          clinicName={record.clinicName}
-          timeLabel={record.timeLabel}
-          deptName={record.deptName}
-          doctorName={record.doctorName}
-          diseaseName={record.diseaseName}
+          clinicName={detail?.clinicName ?? record.clinicName}
+          timeLabel={detail?.timeLabel ?? record.timeLabel}
+          deptName={detail?.deptName ?? record.deptName}
+          doctorName={detail?.doctorName ?? record.doctorName}
+          diseaseName={detail?.diseaseName ?? record.diseaseName}
         />
 
         {/* 고정: 하얀 카드 틀 / 스크롤: 카드 내부만 */}
@@ -167,22 +227,21 @@ export default function MycareDetail({ navigation, route }: Props) {
           >
             {/* 진료 요약 */}
             <MycareDetailBlock title="진료 요약">
-              <View style={styles.grayBox}>
-                <Text style={styles.grayText}>{record.summary}</Text>
+              <View style={styles.grayBox}><Text style={styles.grayText}>{detail?.summary ?? record.summary}</Text><Text style={styles.grayText}>{record.summary}</Text>
               </View>
             </MycareDetailBlock>
 
             {/* 전체 보기 */}
             <MycareDetailBlock
               title="전체 보기"
-              subtitle={record.hasAudio ? '녹음 들으러 가기' : undefined}
+              subtitle={detail?.hasAudio ? '녹음 들으러 가기' : undefined}
               subtitleColor="#EF4444"
               onPressSubtitle={
-                record.hasAudio
+                detail?.hasAudio
                   ? () => {
                       navigation.navigate('MycareAudio', {
-                          recordId: record.id,
-                          records: sortedRecords,
+                        recordId: record.id,
+                        records: sortedRecords,
                       });
                     }
                   : undefined
@@ -243,7 +302,7 @@ export default function MycareDetail({ navigation, route }: Props) {
           navigation.navigate('MycareMain', {
             deletedRecordId: record.id,
             toastMessage: '삭제됐어요',
-          } as any);
+          });
         }}
       />
     </View>

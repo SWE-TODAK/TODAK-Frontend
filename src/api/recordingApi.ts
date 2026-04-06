@@ -175,3 +175,67 @@ export const getMyRecordingList = async (): Promise<MycareRecord[]> => {
 
   return mapped;
 };
+
+type RecordingDetailApiData = {
+  recordingId: string;
+  date: string;
+  hospitalName: string;
+  visitTime: string;
+  department: string;
+  doctorName: string;
+  diagnosisName: string;
+  summary: string;
+  fullTranscription: string;
+  audioUrl: string | null;
+  memo: string | null;
+};
+
+type RecordingDetailApiResponse = {
+  status: number;
+  message: string;
+  data: RecordingDetailApiData;
+};
+
+export type RecordingDetail = {
+  id: string;
+  dateLabel: string;
+  clinicName: string;
+  timeLabel: string;
+  deptName: string;
+  doctorName: string;
+  diseaseName: string;
+  summary: string;
+  fullText: string;
+  memo: string;
+  hasAudio: boolean;
+  audioUrl?: string | null;
+};
+
+export const getRecordingDetail = async (
+  recordingId: string,
+): Promise<RecordingDetail> => {
+  const response = await api.get<RecordingDetailApiResponse>(`/recordings/${recordingId}`);
+
+  console.log('📥 녹음 상세 원본 응답:', response.data);
+
+  const item = response.data.data;
+
+  const mapped: RecordingDetail = {
+    id: item.recordingId,
+    dateLabel: item.date,
+    clinicName: item.hospitalName ?? '',
+    timeLabel: item.visitTime ?? '',
+    deptName: item.department ?? '',
+    doctorName: item.doctorName ?? '',
+    diseaseName: item.diagnosisName ?? '',
+    summary: item.summary ?? '',
+    fullText: item.fullTranscription ?? '',
+    memo: item.memo ?? '',
+    hasAudio: !!item.audioUrl,
+    audioUrl: item.audioUrl,
+  };
+
+  console.log('📦 녹음 상세 변환 데이터:', mapped);
+
+  return mapped;
+};
