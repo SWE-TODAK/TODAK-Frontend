@@ -34,6 +34,7 @@ export type RootStackParamList = {
   Setting: undefined;
   ProfileSetting: undefined;
   PrivacyHistory: undefined;
+  ChangePassword: undefined;
 
   LocalLogin: { email?: string; mode?: 'login' | 'signup' } | undefined;
   LocalPassword: { email: string };

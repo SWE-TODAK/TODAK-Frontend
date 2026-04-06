@@ -3,11 +3,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Setting from '../screens/setting/Setting';
 import ProfileSetting from '../screens/setting/ProfileSetting';
 import PrivacyHistory from '../screens/setting/PrivacyHistory';
+import ChangePassword from '../screens/setting/ChangePassword';
 
 export type SettingStackParamList = {
   SettingMain: undefined;
   ProfileSetting: undefined;
   PrivacyHistory: undefined;
+  ChangePassword: undefined;
 };
 
 const Stack = createStackNavigator<SettingStackParamList>();
@@ -18,6 +20,7 @@ const SettingStackNavigator = () => {
       <Stack.Screen name="SettingMain" component={Setting} />
       <Stack.Screen name="ProfileSetting" component={ProfileSetting} />
       <Stack.Screen name="PrivacyHistory" component={PrivacyHistory} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
     </Stack.Navigator>
   );
 };
