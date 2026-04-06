@@ -1,7 +1,6 @@
 // src/screens/setting/ProfileSetting.tsx
 import React, { useMemo, useState, useEffect } from 'react';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import EmailAuthConsentModal from '../../components/Login/EmailAuthConsentModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Toast from '../../components/common/Toast';
 import WithdrawModal from '../../components/Setting/WithdrawModal';
@@ -26,6 +25,7 @@ import type { RootStackParamList } from '../../navigation/RootNavigator';
 
 import instance from '../../api/axios';
 import { clearAllTokens, getRefreshToken } from '../../utils/authStorage';
+
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileSetting'>;
 
@@ -35,7 +35,6 @@ export default function ProfileSetting({ navigation }: Props) {
   // 유저 로그인 제공자 (LOCAL or KAKAO)
   const [loginProvider, setLoginProvider] = useState<'LOCAL' | 'KAKAO'>('LOCAL');
 
-  const [consentVisible, setConsentVisible] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
@@ -106,7 +105,7 @@ export default function ProfileSetting({ navigation }: Props) {
 
   const handleSessionClear = async () => {
     await clearAllTokens();
-    navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] });
+    navigation.reset({ index: 0, routes: [{ name: 'Login' as any }] }); // 필요에 맞게 라우트명 조절
   };
 
   const commitNickname = async () => {
@@ -115,8 +114,7 @@ export default function ProfileSetting({ navigation }: Props) {
       await instance.patch('/users/me/profile/name', { nickname: nicknameDraft });
       showToast('저장됐어요');
     } catch (e: any) {
-      const errMsg = e.response?.data?.message || '닉네임 저장에 실패했어요';
-      showToast(errMsg);
+      showToast(e.response?.data?.message || '닉네임 저장에 실패했어요');
     }
   };
 
@@ -133,8 +131,7 @@ export default function ProfileSetting({ navigation }: Props) {
       await instance.patch('/users/me/profile/email', { email: v });
       showToast('저장됐어요');
     } catch (e: any) {
-      const errMsg = e.response?.data?.message || '이메일 저장에 실패했어요';
-      showToast(errMsg);
+      showToast(e.response?.data?.message || '이메일 저장에 실패했어요');
     }
   };
 
@@ -166,8 +163,7 @@ export default function ProfileSetting({ navigation }: Props) {
       setSexDraft(next);
       showToast('저장됐어요');
     } catch (e: any) {
-      const errMsg = e.response?.data?.message || '성별 저장에 실패했어요';
-      showToast(errMsg);
+      showToast(e.response?.data?.message || '성별 저장에 실패했어요');
     }
   };
 
@@ -177,8 +173,7 @@ export default function ProfileSetting({ navigation }: Props) {
       setBirthDraft(next);
       showToast('저장됐어요');
     } catch (e: any) {
-      const errMsg = e.response?.data?.message || '생년월일 저장에 실패했어요';
-      showToast(errMsg);
+      showToast(e.response?.data?.message || '생년월일 저장에 실패했어요');
     }
   };
 
@@ -200,8 +195,7 @@ export default function ProfileSetting({ navigation }: Props) {
         showToast('저장됐어요');
       }
     } catch (e: any) {
-      const errMsg = e.response?.data?.message || '이미지 저장에 실패했어요';
-      showToast(errMsg);
+      showToast(e.response?.data?.message || '이미지 저장에 실패했어요');
     }
   };
 
@@ -209,13 +203,9 @@ export default function ProfileSetting({ navigation }: Props) {
     setLogoutVisible(false);
     try {
       const refreshToken = await getRefreshToken();
-      await instance.post('/auth/logout', {
-        refreshToken: refreshToken
-      });
+      await instance.post('/auth/logout', { refreshToken });
     } catch (e: any) {
       console.log('로그아웃 API 실패:', e.response?.data || e.message);
-      const errMsg = e.response?.data?.message || '로그아웃 처리 중 오류가 발생했어요';
-      showToast(errMsg);
     } finally {
       await handleSessionClear();
     }
@@ -323,10 +313,13 @@ export default function ProfileSetting({ navigation }: Props) {
           <InfoRow label="생년월일" value={birthLabel} onPressEdit={onEditBirth} />
           <InfoRow label="성별" value={sexLabel} onPressEdit={onEditSex} />
 
-          <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => setConsentVisible(true)}>
-            <Text style={styles.menuText}>비밀번호 변경</Text>
-            <Image source={require('../../assets/icons/arrow-right.png')} style={styles.chevron} resizeMode="contain" />
-          </TouchableOpacity>
+          {/* ✅ LOCAL 계정인 경우에만 비밀번호 변경 메뉴 노출 */}
+          {loginProvider === 'LOCAL' && (
+            <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => navigation.navigate('ChangePassword' as any)}>
+              <Text style={styles.menuText}>비밀번호 변경</Text>
+              <Image source={require('../../assets/icons/arrow-right.png')} style={styles.chevron} resizeMode="contain" />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.menuRow} activeOpacity={0.8} onPress={() => setLogoutVisible(true)}>
             <Text style={styles.menuText}>로그아웃</Text>
@@ -367,20 +360,6 @@ export default function ProfileSetting({ navigation }: Props) {
         }}
       />
 
-      <EmailAuthConsentModal
-        visible={consentVisible}
-        email={emailDraft}
-        onCancel={() => setConsentVisible(false)}
-        onConfirm={() => {
-          setConsentVisible(false);
-          navigation.navigate('ResetPasswordVerify', {
-            email: emailDraft,
-            returnTo: 'ProfileSetting',
-            skipSuccess: true,
-          } as any);
-        }}
-      />
-
       <ConfirmModal
         visible={logoutVisible}
         title="로그아웃"
@@ -392,7 +371,6 @@ export default function ProfileSetting({ navigation }: Props) {
         onConfirm={handleLogout}
       />
 
-      {/* 분리된 커스텀 모달 컴포넌트 사용 */}
       <WithdrawModal
         visible={withdrawVisible}
         provider={loginProvider}
@@ -433,10 +411,7 @@ export default function ProfileSetting({ navigation }: Props) {
   );
 }
 
-/** -----------------------------
- * 작은 컴포넌트들
- * ------------------------------ */
-
+// ... InfoRow, SexPickerModal 등 이하 컴포넌트는 기존과 완전 동일하게 유지해주세요!
 function InfoRow({
   label, value, editable = false, isEditing = false, onStartEdit, onChangeText, onClear, onSubmit, keyboardType, onPressEdit, errorText,
 }: any) {
