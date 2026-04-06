@@ -7,7 +7,7 @@ import type { MycareStackParamList } from '../navigation/MycareStackNavigator';
 import MycareDetailTopCard from '../components/Mycare/MycareDetailTopCard';
 import MycareDetailBlock from '../components/Mycare/MycareDetailBlock';
 import ConfirmModal from '../components/common/ConfirmModal';
-import { getRecordingDetail } from '../api/recordingApi';
+import { getRecordingDetail , deleteRecording} from '../api/recordingApi';
 
 type Props = NativeStackScreenProps<MycareStackParamList, 'MycareDetail'>;
 
@@ -73,6 +73,8 @@ export default function MycareDetail({ navigation, route }: Props) {
   };
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
 
   const [memo, setMemo] = useState('');
   
@@ -92,6 +94,8 @@ export default function MycareDetail({ navigation, route }: Props) {
     hasAudio: boolean;
     audioUrl?: string | null;
   }>(null);
+
+  const targetRecordId = detail?.id ?? record.id;
 
   const [loading, setLoading] = useState(true);
 
@@ -114,7 +118,7 @@ export default function MycareDetail({ navigation, route }: Props) {
 
     fetchDetail();
   }, [recordId]);
-  
+
   const fullText = detail?.fullText || detail?.summary || record.fullText || record.summary;
 
   useEffect(() => {
@@ -227,8 +231,9 @@ export default function MycareDetail({ navigation, route }: Props) {
           >
             {/* 진료 요약 */}
             <MycareDetailBlock title="진료 요약">
-              <View style={styles.grayBox}><Text style={styles.grayText}>{detail?.summary ?? record.summary}</Text><Text style={styles.grayText}>{record.summary}</Text>
-              </View>
+             <View style={styles.grayBox}>
+              <Text style={styles.grayText}>{detail?.summary ?? record.summary}</Text>
+            </View>
             </MycareDetailBlock>
 
             {/* 전체 보기 */}
@@ -295,14 +300,24 @@ export default function MycareDetail({ navigation, route }: Props) {
         confirmText="삭제"
         confirmColor="#EF4444"
         onCancel={() => setDeleteModalVisible(false)}
-        onConfirm={() => {
-          setDeleteModalVisible(false);
+        onConfirm={async () => {
+          try {
+            setDeleting(true);
+            await deleteRecording(targetRecordId);
+            setDeleteModalVisible(false);
 
-          // Mycare 화면으로 이동 + 삭제 완료 토스트 신호 전달
-          navigation.navigate('MycareMain', {
-            deletedRecordId: record.id,
-            toastMessage: '삭제됐어요',
-          });
+            navigation.navigate('MycareMain', {
+              deletedRecordId: targetRecordId,
+              toastMessage: '삭제됐어요',
+            });
+          } catch (error: any) {
+            console.error('❌ 진료 기록 삭제 실패:', error);
+            console.error('❌ status:', error?.response?.status);
+            console.error('❌ data:', error?.response?.data);
+            setDeleteModalVisible(false);
+          } finally {
+            setDeleting(false);
+          }
         }}
       />
     </View>
